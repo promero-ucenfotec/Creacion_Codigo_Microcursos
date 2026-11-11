@@ -16,10 +16,6 @@
 window.APP_CONFIG = {
   // ID de cliente OAuth (Google Cloud Console → Credenciales → tipo «Aplicación web»)
   CLIENT_ID: '204310820162-phq4d7grasopg952prts474vdl9vepfl.apps.googleusercontent.com',
-  // Número del proyecto de Google Cloud (es el inicio del CLIENT_ID)
-  APP_ID: '204310820162',
-  // Clave de API (Credenciales → Crear credenciales → Clave de API). La usa el selector de archivos de Google.
-  API_KEY: '',
   // ID del Google Sheets de registros (lo que va entre /d/ y /edit en el enlace)
   SHEET_ID: '12QkZFG-zUIZlTpEik87AEmSSJX9oelA1Q6fRyAAm_lY',
   // Nombre de la pestaña donde están los registros
@@ -541,9 +537,9 @@ table.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 const CFG = window.APP_CONFIG;
 const PARAMS = new URLSearchParams(location.search);
 const DEMO = PARAMS.has('demo');
-const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive.file';
+const SCOPE_HOJAS = 'https://www.googleapis.com/auth/spreadsheets';
 const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.send';
-const SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', SCOPE_DRIVE, SCOPE_GMAIL];
+const SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', SCOPE_HOJAS, SCOPE_GMAIL];
 const LIB = {
   gis: 'https://accounts.google.com/gsi/client',
   gapi: 'https://apis.google.com/js/api.js',
@@ -1071,63 +1067,29 @@ const Real = {
     await G.update(`'${CFG.HOJA_REGISTROS}'!A${fila}`, [[!!v]]);
     Real.bitacora((v ? 'Marcó' : 'Desmarcó') + ' «Incluido en Plantilla Maestra»', r.id);
   },
-  async agregarPersona(p){
+  /** El acceso es de la aplicación: agregar a alguien es solo anotarlo en la hoja Directores y, si se desea, avisarle por correo. */
+  async agregarPersona(p, avisar){
     await G.append(`'${HOJA.equipo}'!A:G`, [[p.correo, p.nombre, p.escuela, p.rol, 'Sí', S.user.email, fechaTexto(new Date())]]);
-    let compartido = true, error = '';
-    try {
-      const msg = `${S.user.name} le dio acceso a la herramienta de Asignación de código a microcursos (${p.rol === 'Revisor' ? 'revisión de Desarrollo Curricular' : 'escuela de ' + p.escuela}). Ingrese en: ${location.origin + location.pathname}`;
-      await G.drive(`/permissions?sendNotificationEmail=true&supportsAllDrives=true&emailMessage=${encodeURIComponent(msg)}`, { method:'POST', body: JSON.stringify({ role:'writer', type:'user', emailAddress:p.correo }) });
-      if(['Revisor', 'Director'].includes(p.rol) && CFG.SHEET_ID_MAESTRA) await G.drive(`/permissions?sendNotificationEmail=false&supportsAllDrives=true`, { method:'POST', body: JSON.stringify({ role: p.rol === 'Revisor' ? 'writer' : 'reader', type:'user', emailAddress:p.correo }) }, CFG.SHEET_ID_MAESTRA).catch(e => { error = 'Plantilla Maestra: ' + (e.detalle || e.message); });
-    } catch(e){ compartido = false; error = e.detalle || e.message; }
-    Real.bitacora(`Agregó ${p.rol.toLowerCase()} a ${p.escuela}`, p.correo + (compartido ? '' : ' (sin compartir: ' + error + ')'));
-    return { compartido, error };
+    let error = '';
+    if(avisar) await G.gmail(correoBienvenida(p)).catch(e => { error = e.message; });
+    Real.bitacora(`Agregó ${({ Director:'dirección', Revisor:'revisión', Registrador:'docente' })[p.rol]} a ${p.escuela}`, p.correo);
+    return { compartido: !error, error };
   },
-  async editarPersona(m, n, otrasFilas){
-    const hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.equipo).properties;
+  async editarPersona(m, n){
     const [filas] = await G.batchGet([`'${HOJA.equipo}'!A2:C`]);
     const i = filas.findIndex(f => String(f[0]).toLowerCase().trim() === m.correo && String(f[2] || '').trim() === (m.escuela || ''));
     if(i < 0) throw new Error('No se encontró a esa persona en la hoja Directores. Recargue e intente de nuevo.');
     await G.update(`'${HOJA.equipo}'!A${i + 2}:E${i + 2}`, [[n.correo, n.nombre, n.escuela, n.rol, n.activo ? 'Sí' : 'No']]);
-    let aviso = '';
-    const permiso = async (id, correo, rol, quitar) => {
-      if(quitar){
-        const j = await G.drive('/permissions?supportsAllDrives=true&fields=permissions(id,emailAddress,role)', {}, id).catch(() => ({}));
-        const p = (j.permissions || []).find(x => String(x.emailAddress).toLowerCase() === correo && x.role !== 'owner');
-        if(p) await G.drive(`/permissions/${p.id}?supportsAllDrives=true`, { method:'DELETE' }, id).catch(() => {});
-      } else await G.drive('/permissions?sendNotificationEmail=false&supportsAllDrives=true', { method:'POST', body: JSON.stringify({ role:rol, type:'user', emailAddress:correo }) }, id);
-    };
-    const usaMaestra = r => ['Revisor', 'Director'].includes(r);
-    try {
-      if(n.correo !== m.correo || (n.activo && m.activo === false)){
-        await permiso(CFG.SHEET_ID, n.correo, 'writer');
-        if(usaMaestra(n.rol) && CFG.SHEET_ID_MAESTRA) await permiso(CFG.SHEET_ID_MAESTRA, n.correo, n.rol === 'Revisor' ? 'writer' : 'reader');
-        aviso = `${n.nombre} ya tiene acceso con ${n.correo}.`;
-      } else if(n.rol !== m.rol && usaMaestra(n.rol) && CFG.SHEET_ID_MAESTRA){
-        await permiso(CFG.SHEET_ID_MAESTRA, n.correo, n.rol === 'Revisor' ? 'writer' : 'reader');
-      }
-      const viejoSinUso = (n.correo !== m.correo || !n.activo) && !otrasFilas;
-      if(viejoSinUso){ await permiso(CFG.SHEET_ID, m.correo, '', true); if(CFG.SHEET_ID_MAESTRA) await permiso(CFG.SHEET_ID_MAESTRA, m.correo, '', true); }
-      else if(usaMaestra(m.rol) && !usaMaestra(n.rol) && CFG.SHEET_ID_MAESTRA && !otrasFilas) await permiso(CFG.SHEET_ID_MAESTRA, m.correo, '', true);
-    } catch(e){ aviso = 'Se guardaron los datos, pero no se pudieron ajustar los permisos de Google: ' + (e.detalle || e.message); }
     Real.bitacora('Editó persona', `${m.correo} (${m.rol}, ${m.escuela}) → ${n.correo} (${n.rol}, ${n.escuela}${n.activo ? '' : ', inactivo'})`);
-    return { aviso };
+    return {};
   },
-  async quitarPersona(m, aunQueda){
+  async quitarPersona(m){
     const hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.equipo).properties;
     const [filas] = await G.batchGet([`'${HOJA.equipo}'!A2:C`]);
     const i = filas.findIndex(f => String(f[0]).toLowerCase().trim() === m.correo && String(f[2] || '').trim() === (m.escuela || ''));
     if(i >= 0) await G.batch([{ deleteDimension:{ range:{ sheetId: hoja.sheetId, dimension:'ROWS', startIndex: i + 1, endIndex: i + 2 } } }]);
-    let quitado = false;
-    if(!aunQueda){
-      try {
-        const j = await G.drive('/permissions?supportsAllDrives=true&fields=permissions(id,emailAddress,role)');
-        const p = (j.permissions || []).find(x => String(x.emailAddress).toLowerCase() === m.correo && x.role !== 'owner');
-        if(p){ await G.drive(`/permissions/${p.id}?supportsAllDrives=true`, { method:'DELETE' }); quitado = true; }
-        if(['Revisor', 'Director'].includes(m.rol) && CFG.SHEET_ID_MAESTRA){ const j2 = await G.drive('/permissions?supportsAllDrives=true&fields=permissions(id,emailAddress,role)', {}, CFG.SHEET_ID_MAESTRA).catch(() => ({})); const p2 = (j2.permissions || []).find(x => String(x.emailAddress).toLowerCase() === m.correo && x.role !== 'owner'); if(p2) await G.drive(`/permissions/${p2.id}?supportsAllDrives=true`, { method:'DELETE' }, CFG.SHEET_ID_MAESTRA).catch(() => {}); }
-      } catch(e){}
-    }
-    Real.bitacora(`Quitó a ${m.correo} de ${m.escuela}`, quitado ? 'Se retiró el acceso de edición' : '');
-    return { quitado };
+    Real.bitacora(`Quitó a ${m.correo} de ${m.escuela}`, '');
+    return { quitado:true };
   },
   bitacora(accion, detalle){
     if(!Real.meta || !Real.meta.sheets.some(s => s.properties.title === HOJA.bitacora)) return Promise.resolve();
@@ -1278,34 +1240,10 @@ Object.assign(Real, {
     }));
     if(reqs.length) await G.batch(reqs).catch(() => {});
   },
-  async compartirAdmins(admins){
-    for(const a of admins){ try { await G.drive('/permissions?sendNotificationEmail=false&supportsAllDrives=true', { method:'POST', body: JSON.stringify({ role:'writer', type:'user', emailAddress:a }) }); } catch(e){} }
-  }
+  async compartirAdmins(){}
 });
 
 const nuevoId = () => 'R-' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(16).slice(2) + Date.now().toString(16)).slice(0, 8).toUpperCase();
-
-/* =========================================================================
-   SELECTOR DE ARCHIVO DE GOOGLE (autoriza la hoja una sola vez por persona)
-   ========================================================================= */
-async function abrirSelectorHoja(ids = [CFG.SHEET_ID]){
-  if(!CFG.API_KEY){ toast('Falta configurar API_KEY en el archivo.', 'error', 6000); return false; }
-  await cargarScript(LIB.gapi);
-  await new Promise(r => gapi.load('picker', r));
-  await asegurarSesion();
-  return new Promise(resolve => {
-    const vista = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS).setMode(google.picker.DocsViewMode.LIST);
-    try { vista.setFileIds(ids.join(',')); } catch(e){}
-    const p = new google.picker.PickerBuilder()
-      .setAppId(CFG.APP_ID).setOAuthToken(S.token).setDeveloperKey(CFG.API_KEY).setLocale('es')
-      .setTitle(ids.length > 1 ? 'Seleccione los archivos y presione «Seleccionar»' : 'Seleccione el archivo y presione «Seleccionar»').addView(vista).enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-      .setCallback(d => {
-        if(d.action === google.picker.Action.PICKED){ const ok = d.docs && d.docs.some(x => ids.includes(x.id)); if(!ok) toast('Ese no es el archivo esperado. Intente de nuevo.', 'error'); resolve(ok); }
-        else if(d.action === google.picker.Action.CANCEL) resolve(false);
-      }).build();
-    p.setVisible(true);
-  });
-}
 
 /* =========================================================================
    PANTALLAS DE ACCESO
@@ -1315,16 +1253,22 @@ function marco(html){
   app.innerHTML = `<div class="acceso"><div class="acceso-caja"><img class="logo" src="${LOGO}" alt="Universidad CENFOTEC"><div class="ceja">Desarrollo Curricular y Docente</div>${html}</div>
     <div class="pie-acceso"><a href="?terminos">Términos de servicio</a><a href="?privacidad">Política de privacidad</a></div></div>`;
 }
+function correoBienvenida(p){
+  const url = location.origin + location.pathname;
+  const que = p.rol === 'Revisor' ? 'revisar las solicitudes de código en Desarrollo Curricular' : p.rol === 'Director' ? `gestionar los cursos de la escuela de ${p.escuela}` : `registrar cursos de la escuela de ${p.escuela}`;
+  const txt = `${saludoHora()}, ${p.nombre.split(' ')[0]}:\n\n${S.user.name} le dio acceso a la herramienta de Asignación de código a microcursos para ${que}.\n\nIngrese aquí con su cuenta institucional de Google:\n${url}\n\nLa primera vez, Google le pedirá permisos: marque todas las casillas para que la herramienta funcione.\n\nSaludos cordiales,\n${S.user.name}`;
+  return { to:[p.correo], cc:[], subject:'Acceso a Asignación de código a microcursos', html: textoAHtml(txt) };
+}
 const G_MOCK = `<div class="g-mock"><span class="tag">Así se verá</span><div class="cab">Asignación de código quiere acceder a su Cuenta de Google</div>
   <div class="fila-g todo"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Seleccionar todo</span><span class="pista">← marque esta</span></div>
-  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ver, editar, crear y borrar solo los archivos de Google Drive que use con esta app</span></div>
+  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ver, editar, crear y borrar todas sus hojas de cálculo de Google Sheets</span></div>
   <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Enviar correos electrónicos en su nombre</span></div></div>`;
 function pantallaBienvenida(){
   const ya = !!ls.get(K.consentimiento);
   marco(`<h1>Asignación de código a microcursos</h1>
     <p class="subt">Registre sus cursos y Desarrollo Curricular les asignará el código en la Plantilla Maestra.</p>
     ${ya ? '' : `<div class="alerta info">${icon('info')}<div>La primera vez, Google le pedirá permisos. <b>Marque todas las casillas</b>; si deja alguna sin marcar, la herramienta no podrá funcionar.</div></div>
-    <ol class="pasos-g"><li><span class="n">1</span><span>Elija su cuenta institucional.</span></li><li><span class="n">2</span><span>Marque <b>Seleccionar todo</b> y presione <b>Continuar</b>.</span></li><li><span class="n">3</span><span>Elija la hoja de registros cuando se le pida (solo una vez).</span></li></ol>${G_MOCK}`}
+    <ol class="pasos-g"><li><span class="n">1</span><span>Elija su cuenta institucional.</span></li><li><span class="n">2</span><span>Marque <b>Seleccionar todo</b> y presione <b>Continuar</b>. Listo.</span></li></ol>${G_MOCK}<p class="nota" style="margin:10px 0 0;text-align:left">Google lo describe así de forma general, pero la herramienta solo abre las hojas de Desarrollo Curricular.</p>`}
     <label class="check-legal"><input type="checkbox" id="acepto" ${ya ? 'checked' : ''}><span>Acepto los <a href="?terminos" target="_blank">Términos de servicio</a> y la <a href="?privacidad" target="_blank">Política de privacidad</a>.</span></label>
     <button class="btn-google" id="btn-g" ${ya ? '' : 'disabled'}>${G_LOGO}Continuar con Google</button>`);
   $('#acepto').addEventListener('change', e => { $('#btn-g').disabled = !e.target.checked; });
@@ -1339,21 +1283,11 @@ function pantallaRegreso(u){
   $('#btn-o').addEventListener('click', () => { ls.del(K.usuario); pantallaBienvenida(); });
 }
 function pantallaPermisos(f){
-  const n = { 'https://www.googleapis.com/auth/userinfo.email':['usuario','Ver su correo'], 'https://www.googleapis.com/auth/userinfo.profile':['usuario','Ver su nombre y foto'], [SCOPE_DRIVE]:['carpeta','Acceder a la hoja de registros que seleccione'], [SCOPE_GMAIL]:['correo','Enviar el aviso desde su correo'] };
+  const n = { 'https://www.googleapis.com/auth/userinfo.email':['usuario','Ver su correo'], 'https://www.googleapis.com/auth/userinfo.profile':['usuario','Ver su nombre y foto'], [SCOPE_HOJAS]:['tabla','Ver y editar hojas de cálculo (solo se usan las de DCD)'], [SCOPE_GMAIL]:['correo','Enviar el aviso desde su correo'] };
   marco(`<h1>Faltan permisos</h1><p class="subt">En la ventana de Google es necesario <b>marcar todas las casillas</b>. Puede retirarlos cuando quiera desde su cuenta de Google.</p>
     <div class="permisos">${SCOPES.filter(s => s !== 'openid').map(s => `<div class="permiso ${f.includes(s) ? 'falta' : 'ok'}">${icon(f.includes(s) ? 'x' : 'check')}<div><b>${n[s][1]}</b>${f.includes(s) ? 'Pendiente' : 'Concedido'}</div></div>`).join('')}</div>
     <button class="btn-google" id="btn-r" style="margin-top:18px">${G_LOGO}Conceder los permisos</button>`);
   $('#btn-r').addEventListener('click', () => conectar('nuevo'));
-}
-function pantallaConectarHoja(){
-  marco(`<h1>Último paso: abrir la hoja</h1>
-    <p class="subt">Por seguridad, Google le pedirá elegir la hoja de registros <b>una sola vez</b>. Así la herramienta solo puede usar ese archivo.</p>
-    <div class="yo">${avatarHTML(S.user)}<div><b>${esc(S.user.name)}</b><span>${esc(S.user.email)}</span></div></div>
-    <button class="btn btn-primario btn-lg" style="width:100%" id="btn-h">${icon('carpeta')}Seleccionar la hoja de registros</button>
-    <div class="alerta info" style="margin:16px 0 0">${icon('info')}<div>¿No aparece la hoja? Aún no tiene acceso. Pídale a la persona directora de su escuela que le agregue a su equipo.</div></div>
-    <p style="text-align:center;margin:12px 0 0"><button class="btn btn-texto btn-sm" id="btn-s">Usar otra cuenta</button></p>`);
-  $('#btn-h').addEventListener('click', async () => { try { if(await abrirSelectorHoja()) cargarSistema(); } catch(e){ toast(e.message, 'error'); } });
-  $('#btn-s').addEventListener('click', cerrarSesion);
 }
 function pantallaSinAcceso(motivo){
   marco(`<h1>Aún no tiene acceso</h1><p class="subt">${esc(motivo)}</p>
@@ -1389,7 +1323,7 @@ async function cargarSistema(){
   let d;
   try { d = await Almacen().cargar(); }
   catch(e){
-    if(e.code === 'SIN_HOJA') return pantallaConectarHoja();
+    if(e.code === 'SIN_HOJA') return pantallaSinAcceso('Su cuenta no puede abrir la hoja de registros. Escriba a Desarrollo Curricular para que revisen el acceso.');
     marco(`<h1>No se pudo conectar</h1><div class="alerta error">${icon('alerta')}<div>${esc(e.message)}</div></div><button class="btn btn-primario" id="r">${icon('recargar')}Intentar de nuevo</button>`);
     $('#r').addEventListener('click', cargarSistema); return;
   }
@@ -1587,8 +1521,7 @@ async function pintarCursosMaestra(){
   let todos;
   try { if(!PM_CACHE) PM_CACHE = await Almacen().maestraCursos(); todos = PM_CACHE; }
   catch(e){
-    cont.innerHTML = e.code === 'SIN_MAESTRA' ? `<div class="vacio">Para ver los cursos oficiales, abra una vez la Plantilla Maestra.<div style="margin-top:12px"><button class="btn btn-sm btn-primario" id="pm-con">${icon('carpeta')}Abrir Plantilla Maestra</button></div></div>` : `<div class="vacio">${esc(e.message)}</div>`;
-    if($('#pm-con')) $('#pm-con').addEventListener('click', async () => { try { if(await abrirSelectorHoja([CFG.SHEET_ID_MAESTRA])){ PM_CACHE = null; pintarCursosMaestra(); } } catch(err){ toast(err.message, 'error'); } });
+    cont.innerHTML = `<div class="vacio">${e.code === 'SIN_MAESTRA' ? 'Por ahora no se pudo abrir la Plantilla Maestra. Desarrollo Curricular puede revisar el acceso.' : esc(e.message)}</div>`;
     return;
   }
   const esc_ = S.school ? S.school.nombre : '', pre = S.school ? S.school.prefijo : '';
@@ -2027,13 +1960,14 @@ function pantallaEquipo(){
   const admin = rolEf() === 'admin';
   const grupos = (admin ? [{ n:'Revisión · Desarrollo Curricular', rev:true, miembros: S.boot.equipo.filter(m => m.rol === 'Revisor') }] : []).concat(gest.map(n => ({ n, miembros: S.boot.equipo.filter(m => m.escuela === n && m.rol !== 'Revisor').sort((a, b) => (a.rol === 'Director' ? 0 : 1) - (b.rol === 'Director' ? 0 : 1)) })));
   app.innerHTML = `<main class="pantalla"><div class="angosto"><button class="volver" id="v">${icon('flecha-izq')}Inicio</button>
-    <div class="cabecera"><div><h1>${admin ? 'Personas y roles' : 'Docentes'}</h1><p>${admin ? 'Asigne quién dirige cada escuela, quién registra cursos y quién revisa en Desarrollo Curricular. Cada persona recibe el permiso que necesita y un correo de Google con el enlace.' : 'Dé permiso a los profesores de su escuela para registrar cursos. Recibirán un correo de Google con el enlace para entrar.'}</p></div></div>
+    <div class="cabecera"><div><h1>${admin ? 'Personas y roles' : 'Docentes'}</h1><p>${admin ? 'Asigne quién dirige cada escuela, quién registra cursos y quién revisa en Desarrollo Curricular. Cada persona puede recibir un correo con el enlace para entrar.' : 'Dé permiso a los profesores de su escuela para registrar cursos. Recibirán un correo de Google con el enlace para entrar.'}</p></div></div>
     <form class="form-linea" id="f-add" autocomplete="off" style="--cols:${admin ? '1.3fr 1fr 1fr 1fr auto' : gest.length > 1 ? '1.3fr 1fr 1fr auto' : '1.3fr 1fr auto'}">
       <div class="campo"><label for="p-correo">Correo de Google</label><input type="email" id="p-correo" required placeholder="nombre@ucenfotec.ac.cr"></div>
       <div class="campo"><label for="p-nombre">Nombre</label><input type="text" id="p-nombre" required placeholder="Nombre y apellido"></div>
       <div class="campo" ${gest.length === 1 ? 'hidden' : ''}><label for="p-esc">Escuela</label><select id="p-esc">${gest.map(n => `<option ${S.school && S.school.nombre === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
       ${admin ? `<div class="campo"><label for="p-rol">Rol</label><select id="p-rol"><option value="Registrador">Docente</option><option value="Director">Dirección de escuela</option><option value="Revisor">Revisión DCD</option></select></div>` : '<input type="hidden" id="p-rol" value="Registrador">'}
       <button class="btn btn-primario" type="submit">${icon('mas')}${admin ? 'Agregar' : 'Dar permiso'}</button>
+      <label class="check-legal" style="grid-column:1/-1;margin:0"><input type="checkbox" id="p-avisar" checked><span>Enviarle un correo con el enlace para entrar</span></label>
     </form>
     ${grupos.map(g => `<div class="equipo-grupo"><h2><i class="punto" style="background:${g.rev ? 'var(--tinta)' : esc(colorDe(g.n))}"></i>${esc(g.n)}</h2>
       ${g.miembros.length ? `<div class="lista">${g.miembros.map(m => `<div class="fila">${avatarHTML({ name:m.nombre || m.correo })}<div class="txt"><b>${esc(m.nombre || m.correo)}</b><span class="sec">${esc(m.correo)}${m.agregadoPor ? ' · agregado por ' + esc(m.agregadoPor) : ''}</span></div>
@@ -2051,12 +1985,10 @@ function pantallaEquipo(){
     if(S.boot.equipo.some(m => m.correo === p.correo && m.escuela === p.escuela && (m.rol === 'Revisor') === (p.rol === 'Revisor'))){ toast('Esa persona ya tiene ese rol.', 'error'); return; }
     espera('Agregando y dando acceso…');
     try {
-      const r = await Almacen().agregarPersona(p);
+      const r = await Almacen().agregarPersona(p, $('#p-avisar').checked);
       S.boot.equipo.push(Object.assign({ activo:true, agregadoPor:S.user.email }, p)); if(p.rol === 'Revisor') S.boot.revisores.push(p.correo);
       finEspera(); pantallaEquipo();
-      if(r.compartido) toast(`${p.nombre} ya tiene acceso. Google le envió un correo con el enlace.`, '', 5000);
-      else modal({ titulo:'Agregado, pero sin permiso de edición', cuerpo:`<div class="alerta aviso">${icon('alerta')}<div>No se pudo compartir la hoja automáticamente (${esc(r.error)}). Compártala manualmente con <b>${esc(p.correo)}</b> como «Editor».</div></div>`,
-        acciones:[{ html:`${icon('externo')}Abrir Google Sheets`, clase:'btn-primario', accion: () => { window.open(`https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/edit`, '_blank'); } }] });
+      toast(r.compartido ? `${p.nombre} ya tiene acceso${$('#p-avisar') && !$('#p-avisar').checked ? '' : ' y se le envió el enlace por correo'}.` : `${p.nombre} ya tiene acceso, pero no se pudo enviar el correo de aviso.`, '', 5000);
     } catch(err){ finEspera(); toast(err.message, 'error', 6000); }
   });
   $$('[data-editar]').forEach(b => b.addEventListener('click', () => {
@@ -2066,7 +1998,7 @@ function pantallaEquipo(){
   $$('[data-quitar]').forEach(b => b.addEventListener('click', async () => {
     const [correo, escuela] = b.dataset.quitar.split('|'); const m = S.boot.equipo.find(x => x.correo === correo && x.escuela === escuela);
     const aunQueda = S.boot.equipo.some(x => x.correo === correo && x.escuela !== escuela) || listaCorreos(S.boot.cfg.ADMINISTRADORES).includes(correo);
-    if(!await confirmar('Quitar del equipo', `¿Quitar a <b>${esc(m.nombre || correo)}</b> de ${esc(escuela)}?${aunQueda ? '' : ' También se le retirará el permiso de edición de la hoja.'}`, 'Quitar', true)) return;
+    if(!await confirmar('Quitar del equipo', `¿Quitar a <b>${esc(m.nombre || correo)}</b> de ${esc(escuela)}?Dejará de poder usar la herramienta para esa escuela.`, 'Quitar', true)) return;
     espera('Quitando…');
     try { await Almacen().quitarPersona(m, aunQueda); S.boot.equipo = S.boot.equipo.filter(x => x !== m); finEspera(); toast('Persona quitada del equipo.'); pantallaEquipo(); }
     catch(e){ finEspera(); toast(e.message, 'error', 6000); }
@@ -2205,8 +2137,7 @@ function pantallaRevision(tab){
   pintarRevision();
   cargarMaestra().then(() => { $('#aviso-maestra').innerHTML = ''; }).catch(e => {
     if(!$('#aviso-maestra')) return;
-    $('#aviso-maestra').innerHTML = `<div class="alerta aviso">${icon('alerta')}<div style="flex:1">${e.code === 'SIN_MAESTRA' ? 'Para aprobar cursos, conecte una vez la <b>Plantilla Maestra</b> (Google le pedirá seleccionarla).' : esc(e.message)}</div>${e.code === 'SIN_MAESTRA' ? '<button class="btn btn-sm btn-primario" id="con-m">Conectar Plantilla Maestra</button>' : ''}</div>`;
-    if($('#con-m')) $('#con-m').addEventListener('click', async () => { try { if(await abrirSelectorHoja([CFG.SHEET_ID_MAESTRA])){ MAESTRA = null; pantallaRevision(); } } catch(err){ toast(err.message, 'error'); } });
+    $('#aviso-maestra').innerHTML = `<div class="alerta aviso">${icon('alerta')}<div style="flex:1">${e.code === 'SIN_MAESTRA' ? 'No se pudo abrir la Plantilla Maestra con su cuenta. Verifique que la tenga compartida como editora.' : esc(e.message)}</div></div>`;
   });
 }
 async function pintarRevision(){
@@ -2444,7 +2375,7 @@ function pantallaConfig(){
     <div class="cabecera"><div><h1>Configuración</h1><p>Solo las personas administradoras ven esta sección.</p></div><button class="btn btn-suave btn-sm" id="ir-eq">${icon('equipo')}Personas y roles</button></div>
     <div class="tarjeta form-tarjeta"><h2>Administradores</h2><p class="intro">Pueden configurar todo, revisar cursos y asignar roles. ${esc(CFG.ADMIN_INICIAL || '')} siempre es administrador.</p>
       <div class="campo"><label for="adm">Correos (uno por línea)</label><textarea id="adm" rows="3">${esc(listaCorreos(cfg.ADMINISTRADORES).join('\n'))}</textarea></div>
-      <div class="pie-form"><span class="nota">Al guardar se les da permiso de edición y acceso a la configuración protegida.</span><button class="btn btn-primario" id="g-adm">Guardar administradores</button></div></div>
+      <div class="pie-form"><span class="nota">Al guardar, solo ellos podrán editar las pestañas protegidas de configuración.</span><button class="btn btn-primario" id="g-adm">Guardar administradores</button></div></div>
     <div class="tarjeta form-tarjeta" style="margin-top:16px"><h2>Escuelas</h2><p class="intro">El prefijo define las sugerencias de código. Los correos de la escuela (dirección) reciben los avisos y las copias de las observaciones.</p>
       <div id="escs"></div><div class="pie-form"><button class="btn btn-suave btn-sm" id="add-esc">${icon('mas')}Agregar escuela</button><button class="btn btn-primario" id="g-esc">Guardar escuelas</button></div></div>
     <div class="tarjeta form-tarjeta" style="margin-top:16px"><h2>Aviso de registros nuevos</h2><p class="intro">Cada vez que alguien registra cursos, le llega un aviso a las personas revisoras y a estos correos.</p>
@@ -2552,8 +2483,8 @@ function paginaLegal(tipo){
     <h2>2. Datos que usamos</h2><table><tr><th>Dato</th><th>Origen</th><th>Uso</th></tr>
       <tr><td>Nombre, correo y foto de perfil</td><td>Su cuenta de Google (<code>openid</code>, <code>userinfo.email</code>, <code>userinfo.profile</code>)</td><td>Identificarle y registrar quién envió cada curso.</td></tr>
       <tr><td>Información de los cursos</td><td>Lo que usted escribe o sube en Excel</td><td>Guardar la solicitud en la hoja de registros de DCD y generar su comprobante.</td></tr>
-      <tr><td>Personas del equipo</td><td>Lo que ingresa una persona directora</td><td>Dar acceso a la herramienta y permiso de edición en la hoja de registros.</td></tr></table>
-    <h2>3. Acceso a Google Drive</h2><div class="caja">Usamos el permiso <code>drive.file</code>, que <b>solo</b> da acceso a los archivos que usted elige expresamente en el selector de Google: la hoja de registros de DCD. La herramienta no puede ver ni modificar ningún otro archivo de su Drive.</div>
+      <tr><td>Personas del equipo</td><td>Lo que ingresa una persona directora</td><td>Dar acceso a la herramienta para registrar o revisar cursos.</td></tr></table>
+    <h2>3. Acceso a Google Sheets</h2><div class="caja">Usamos el permiso <code>spreadsheets</code>. Google lo describe de forma general («ver y editar sus hojas de cálculo»), pero la herramienta <b>solo</b> abre las hojas de Desarrollo Curricular configuradas en ella: la hoja de registros y la Plantilla Maestra de Microcursos. No lee, modifica ni guarda ninguna otra hoja suya, y no accede al resto de su Drive.</div>
     <h2>4. Envío de correo</h2><div class="caja">El permiso <code>gmail.send</code> se usa <b>únicamente</b> para enviar, desde su cuenta y al momento de registrar, el aviso a las personas que DCD configuró y, si usted lo marca, una copia a usted. No leemos, buscamos, borramos ni guardamos mensajes de su buzón.</div>
     <h2>5. Uso limitado</h2><p>El uso de la información recibida de las API de Google cumple la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de datos del usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado. No vendemos datos, no los usamos para publicidad, no los compartimos fuera de lo aquí descrito ni los usamos para entrenar modelos de inteligencia artificial.</p>
     <h2>6. Dónde se guarda</h2><p>Todo funciona en su navegador y se comunica directamente con Google. No hay servidores intermedios. Los datos quedan en el Google Sheets de DCD, al que acceden solo el personal autorizado y las personas que registran cursos. En su navegador se guardan su nombre, correo y foto (para saludarle al volver), la escuela elegida, el borrador del curso en curso y, durante la sesión, el token temporal de Google (vence en una hora).</p>
@@ -2562,8 +2493,8 @@ function paginaLegal(tipo){
   const term = `<h1>Términos de servicio</h1><p class="fecha">Asignación de código a microcursos · Última actualización: 11 de noviembre de 2026</p>
     <h2>1. Objeto</h2><p>La herramienta permite a las personas directoras y a quienes ellas autoricen registrar microcursos, uno a uno o de forma masiva, para que el Departamento de Desarrollo Curricular y Docente (DCD) de la Universidad CENFOTEC les asigne el código y los incluya en la Plantilla Maestra.</p>
     <h2>2. Aceptación</h2><p>Al marcar la casilla de aceptación y continuar con Google, usted acepta estos términos y la <a href="?privacidad">Política de privacidad</a>. Es necesario conceder todos los permisos solicitados para que la herramienta funcione.</p>
-    <h2>3. Acceso</h2><ul><li>El acceso se realiza con una cuenta de Google; use la institucional cuando la tenga.</li><li>Las personas directoras pueden agregar o quitar personas de su escuela, lo que otorga o retira el permiso de edición sobre la hoja de registros.</li><li>Usted es responsable de la actividad realizada con su cuenta.</li></ul>
-    <h2>4. Uso correcto</h2><ul><li>La información debe ser veraz y corresponder a cursos de su escuela.</li><li>El permiso de edición sobre la hoja se otorga solo para registrar cursos: no se debe modificar ni borrar información de otras escuelas o personas.</li><li>El permiso de correo se usa exclusivamente para el aviso de cada registro.</li></ul>
+    <h2>3. Acceso</h2><ul><li>El acceso se realiza con una cuenta de Google; use la institucional cuando la tenga.</li><li>Las personas directoras pueden agregar o quitar docentes de su escuela, lo que les da o les quita acceso a la herramienta.</li><li>Usted es responsable de la actividad realizada con su cuenta.</li></ul>
+    <h2>4. Uso correcto</h2><ul><li>La información debe ser veraz y corresponder a cursos de su escuela.</li><li>El acceso a las hojas de Desarrollo Curricular se usa solo a través de la herramienta para registrar o revisar cursos: no se debe modificar directamente información de otras escuelas o personas.</li><li>El permiso de correo se usa exclusivamente para el aviso de cada registro.</li></ul>
     <h2>5. Comprobantes</h2><p>Cada envío genera un identificador y un comprobante en PDF. La asignación definitiva del código corresponde a DCD, que puede corregir o completar la información.</p>
     <h2>6. Disponibilidad</h2><p>La herramienta depende de servicios de Google y puede verse afectada por interrupciones ajenas a la Universidad.</p>
     <h2>7. Contacto</h2><p>${c}</p>`;
