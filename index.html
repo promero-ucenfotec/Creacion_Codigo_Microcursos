@@ -227,7 +227,7 @@ main{max-width:1100px;margin:0 auto;padding:34px 36px 100px}
 .accion .ico svg{width:20px;height:20px}
 .accion b{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;margin-bottom:3px}
 .accion span{color:var(--tinta-2);font-size:13px;display:block}
-.seccion-tit{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.seccion-tit{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;min-height:34px}
 .seccion-tit h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tinta-3)}
 .lista{background:#fff;border:1px solid var(--linea);border-radius:var(--radio);overflow:hidden;box-shadow:var(--sombra-suave)}
 .fila{display:flex;align-items:center;gap:14px;padding:13px 18px;width:100%;background:none;border:0;text-align:left}
@@ -262,6 +262,16 @@ button.fila:hover,label.fila:hover{background:#fafcff}
 .tb-rol{font-size:12px;font-weight:600;color:var(--tinta-3)}
 #shell.simple main{max-width:1000px}
 #shell.simple .angosto{max-width:860px;margin:0 auto}
+#shell.simple main:has(.dos-col) .angosto{max-width:1080px}
+#shell.simple main:has(.dos-col){max-width:1140px}
+.dos-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}
+.dos-col .pm-filtros .buscador input{width:100%}
+.dos-col .buscador{width:100%}
+.chips-f{display:flex;flex-wrap:wrap;gap:6px}
+.chips-f button{padding:5px 11px;border-radius:20px;border:1.5px solid var(--linea);background:#fff;font-weight:600;font-size:12px;color:var(--tinta-2)}
+.chips-f button.sel{background:var(--azul2);border-color:var(--azul2);color:#fff}
+.chips-f button .c{opacity:.7;margin-left:4px}
+@media(max-width:900px){ .dos-col{grid-template-columns:1fr} }
 #shell.simple .banner .in{max-width:980px}
 .banner.vercomo{background:#1a2740;border-color:#1a2740;color:#dbe7fb}
 .banner.vercomo .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
@@ -538,7 +548,7 @@ const CFG = window.APP_CONFIG;
 const PARAMS = new URLSearchParams(location.search);
 const DEMO = PARAMS.has('demo');
 const SCOPE_HOJAS = 'https://www.googleapis.com/auth/spreadsheets';
-const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.send';
+const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.compose';
 const SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', SCOPE_HOJAS, SCOPE_GMAIL];
 const LIB = {
   gis: 'https://accounts.google.com/gsi/client',
@@ -612,11 +622,11 @@ const CAMPOS = {
 };
 const PASOS = [
   { titulo:'Datos generales', intro:'Lo esencial para identificar el curso.', campos:['escuela','asignaDCD','nombre','moneda','horas','descripcion'] },
-  { titulo:'Perfil y requisitos', intro:'A quién va dirigido y qué necesita para llevarlo.', campos:['nivel','perfil','reqInd','reqDes','software'] },
-  { titulo:'Contenidos', intro:'Qué aprenderá y si otorga certificación.', campos:['equipo','roles','palabras','contenidos','cert','programa'] }
+  { titulo:'Perfil y requisitos', intro:'A quién va dirigido y qué necesita para llevarlo.', campos:['nivel','perfil','reqInd','reqDes','software','equipo'] },
+  { titulo:'Contenidos', intro:'Qué aprenderá y si otorga certificación.', campos:['roles','palabras','contenidos','cert','programa'] }
 ];
 const TODOS = PASOS.flatMap(p => p.campos);
-const BLOQUES = { escuela:PASOS[0].titulo, nivel:PASOS[1].titulo, equipo:PASOS[2].titulo };
+const BLOQUES = { escuela:PASOS[0].titulo, nivel:PASOS[1].titulo, roles:PASOS[2].titulo };
 
 function validarCurso(c, campos = TODOS){
   const e = {}; const t = v => String(v == null ? '' : v).trim(); const has = k => campos.includes(k);
@@ -891,12 +901,14 @@ const G = {
   drive: (ruta, opts, id = CFG.SHEET_ID) => G.req('https://www.googleapis.com/drive/v3/files/' + id + ruta, opts),
   valores: data => G.req(G.base() + '/values:batchUpdate', { method:'POST', body: JSON.stringify({ valueInputOption:'RAW', data }) }),
   baseM: () => `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID_MAESTRA}`,
-  async gmail(correo){
+  async gmail(correo, borrador){
     const b64 = s => { const by = new TextEncoder().encode(s); let bin = ''; by.forEach(b => bin += String.fromCharCode(b)); return btoa(bin); };
     const enc = s => '=?UTF-8?B?' + b64(s) + '?=';
     const lin = [`From: ${enc(S.user.name)} <${S.user.email}>`, `To: ${correo.to.join(', ')}`, correo.cc.length ? `Cc: ${correo.cc.join(', ')}` : null,
       `Subject: ${enc(correo.subject)}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(correo.html).replace(/.{76}/g, '$&\r\n')].filter(x => x !== null).join('\r\n');
-    await G.req('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method:'POST', body: JSON.stringify({ raw: b64(lin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }) });
+    const raw = b64(lin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    if(borrador) await G.req('https://gmail.googleapis.com/gmail/v1/users/me/drafts', { method:'POST', body: JSON.stringify({ message:{ raw } }) });
+    else await G.req('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', { method:'POST', body: JSON.stringify({ raw }) });
   }
 };
 const letra = n => { let s = ''; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
@@ -918,7 +930,8 @@ const CORREOS_DEFECTO = [
   ['AVISO_MENSAJE', '{saludo} a todos:\nEspero que todo vaya muy bien.\n\nQueremos informarles que hemos ingresado nuevos cursos de la {escuela} a la Plantilla Maestra de Microcursos y Programas. Los cursos corresponden a:\n{cursos}\n\nA continuación, les compartimos el enlace al Sitio Web de Desarrollo Curricular donde se encuentra la plantilla maestra:\nhttps://desarrollocurricular.ucenfotec.ac.cr/\nPara ingresar a la plantilla maestra seleccione el botón en azul que dice "Plantilla maestra microcursos".\n\nQuedamos atentos a cualquier comentario o consulta.\n\nSaludos cordiales,\n{firma}', 'Variables: {saludo} {escuela} {cursos} {cantidad} {firma}'],
   ['OBS_ASUNTO', 'Observaciones sobre el curso «{curso}»', 'Variables: {curso} {escuela}'],
   ['OBS_MENSAJE', '{saludo}, {nombre}:\n\nRevisamos la solicitud del curso «{curso}» de la {escuela} y tenemos las siguientes observaciones:\n\n{observaciones}\n\nPuede corregirlo desde la herramienta de Asignación de código, en «Mis registros».\n\nSaludos cordiales,\n{firma}', 'Variables: {saludo} {nombre} {curso} {escuela} {observaciones} {firma}'],
-  ['ESTADO_INICIAL_PM', 'EN PRODUCCIÓN', 'Estado con que se ingresan los cursos aprobados en la Plantilla Maestra.']
+  ['ESTADO_INICIAL_PM', 'EN PRODUCCIÓN', 'Estado con que se ingresan los cursos aprobados en la Plantilla Maestra.'],
+  ['MODO_ENVIO', 'Borrador', '«Borrador» guarda los correos de revisión en Gmail para revisarlos antes de enviarlos; «Enviar» los envía de una vez.']
 ];
 
 function cursoAFila(c, m, ancho, ex){
@@ -1032,7 +1045,17 @@ const Real = {
   },
   async todos(){
     const ex = Real.ex;
-    const [filas] = await G.batchGet([`'${CFG.HOJA_REGISTROS}'!A2:${letra(Real.ancho)}`]);
+    let [filas] = await G.batchGet([`'${CFG.HOJA_REGISTROS}'!A2:${letra(Real.ancho)}`]);
+    // Mientras el formulario anterior siga activo, sus respuestas llegan al final y sin ID: se les asigna uno y se reordena la hoja
+    const sinId = filas.map((f, i) => ({ f, i })).filter(x => String(x.f[COL.nombre - 1] || '').trim() && !String(x.f[ex.id - 1] || '').trim());
+    if(sinId.length){
+      try {
+        await G.valores(sinId.map(x => ({ range:`'${CFG.HOJA_REGISTROS}'!${letra(ex.id)}${x.i + 2}:${letra(ex.origen)}${x.i + 2}`, values:[ ex.origen === ex.id + 1 ? [nuevoId(), 'Formulario anterior'] : [nuevoId()] ] })));
+        const hoja = Real.meta.sheets.find(x => x.properties.title === CFG.HOJA_REGISTROS).properties;
+        await sinFiltro(G.base(), hoja.sheetId, [{ sortRange:{ range:{ sheetId: hoja.sheetId, startRowIndex:1 }, sortSpecs:[{ dimensionIndex: COL.fecha - 1, sortOrder:'DESCENDING' }] } }]);
+        [filas] = await G.batchGet([`'${CFG.HOJA_REGISTROS}'!A2:${letra(Real.ancho)}`]);
+      } catch(e){ console.warn('No se pudieron ordenar los registros nuevos del formulario anterior', e); }
+    }
     return filas.map((f, i) => filaACurso(f, ex, i + 2)).filter(r => r.nombre || r.fecha).sort((a, b) => (b.fecha > a.fecha ? 1 : b.fecha < a.fecha ? -1 : 0));
   },
   async registrar(cursos, origen){
@@ -1095,7 +1118,7 @@ const Real = {
     if(!Real.meta || !Real.meta.sheets.some(s => s.properties.title === HOJA.bitacora)) return Promise.resolve();
     return G.append(`'${HOJA.bitacora}'!A:D`, [[fechaTexto(new Date()), S.user.email, accion, String(detalle || '').slice(0, 4000)]]).catch(() => {});
   },
-  enviarCorreo: c => G.gmail(c)
+  enviarCorreo: (c, borrador) => G.gmail(c, !!borrador)
 };
 
 /* ---------- Revisión: estados, Plantilla Maestra y configuración ---------- */
@@ -1140,13 +1163,13 @@ function sugerirCodigos(prefijo, moneda, ocupados){
 }
 function estadoDe(r){
   if(r.estado === 'Eliminado') return 'Eliminado';
-  if(r.estado === 'Aprobado' || r.codigoAsignado) return r.notificado ? 'Notificado' : 'Aprobado';
+  if(r.estado === 'Aprobado' || r.codigoAsignado) return r.notificado ? (/^borrador/i.test(r.notificado) ? 'Aviso en borrador' : 'Notificado') : 'Aprobado';
   if(r.estado === 'Con observaciones') return 'Con observaciones';
   if(r.included) return 'Incluido';
   return 'Pendiente';
 }
 const ETQ = { Pendiente:'<span class="etiqueta pend">En revisión</span>', 'Con observaciones':'<span class="etiqueta error">Con observaciones</span>',
-  Aprobado:'<span class="etiqueta ok">Aprobado</span>', Notificado:'<span class="etiqueta ok">Aprobado y notificado</span>', Incluido:'<span class="etiqueta ok">En Plantilla Maestra</span>', Eliminado:'<span class="etiqueta pend">Eliminado</span>' };
+  Aprobado:'<span class="etiqueta ok">Aprobado</span>', Notificado:'<span class="etiqueta ok">Aprobado y notificado</span>', Incluido:'<span class="etiqueta ok">En Plantilla Maestra</span>', Eliminado:'<span class="etiqueta pend">Eliminado</span>', 'Aviso en borrador':'<span class="etiqueta ok">Aprobado · aviso en borrador</span>' };
 
 Object.assign(Real, {
   async marcar(r, cambios){
@@ -1198,7 +1221,7 @@ Object.assign(Real, {
         const cell = val === undefined || val === '' ? {} : typeof val === 'number' ? { userEnteredValue:{ numberValue:val } } : { userEnteredValue:{ stringValue:String(val) } };
         reqs.push({ updateCells:{ start:{ sheetId:sid, rowIndex:pos, columnIndex:ci }, rows:[{ values:[cell] }], fields:'userEnteredValue' } });
       }
-      await G.req(G.baseM() + ':batchUpdate', { method:'POST', body: JSON.stringify({ requests: reqs }) });
+      await sinFiltro(G.baseM(), sid, reqs, 1);
     }
     const cambios = { included:true, estado:'Aprobado', codigoAsignado: items.map(i => i.codigo).join(', '), revisadoPor: S.user.email, fechaRevision: fechaTexto(new Date()) };
     await Real.marcar(r, cambios);
@@ -1243,6 +1266,18 @@ Object.assign(Real, {
   async compartirAdmins(){}
 });
 
+/** Ejecuta cambios con el filtro de la hoja retirado y lo vuelve a poner igual en la misma operación (Sheets no copia filas en un rango filtrado). */
+async function sinFiltro(base, sheetId, requests, filasNuevas = 0){
+  const j = await G.req(base + '?fields=sheets(properties(sheetId),basicFilter)');
+  const hoja = (j.sheets || []).find(x => x.properties.sheetId === sheetId) || {};
+  const f = hoja.basicFilter;
+  if(!f) return G.req(base + ':batchUpdate', { method:'POST', body: JSON.stringify({ requests }) });
+  const filtro = { range: Object.assign({}, f.range) };
+  if(filtro.range.endRowIndex != null) filtro.range.endRowIndex += filasNuevas;
+  if(f.sortSpecs) filtro.sortSpecs = f.sortSpecs;
+  if(f.filterSpecs && f.filterSpecs.length) filtro.filterSpecs = f.filterSpecs; else if(f.criteria) filtro.criteria = f.criteria;
+  return G.req(base + ':batchUpdate', { method:'POST', body: JSON.stringify({ requests: [{ clearBasicFilter:{ sheetId } }].concat(requests, [{ setBasicFilter:{ filter: filtro } }]) }) });
+}
 const nuevoId = () => 'R-' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(16).slice(2) + Date.now().toString(16)).slice(0, 8).toUpperCase();
 
 /* =========================================================================
@@ -1262,7 +1297,7 @@ function correoBienvenida(p){
 const G_MOCK = `<div class="g-mock"><span class="tag">Así se verá</span><div class="cab">Asignación de código quiere acceder a su Cuenta de Google</div>
   <div class="fila-g todo"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Seleccionar todo</span><span class="pista">← marque esta</span></div>
   <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ver, editar, crear y borrar todas sus hojas de cálculo de Google Sheets</span></div>
-  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Enviar correos electrónicos en su nombre</span></div></div>`;
+  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Administrar borradores y enviar correos electrónicos</span></div></div>`;
 function pantallaBienvenida(){
   const ya = !!ls.get(K.consentimiento);
   marco(`<h1>Asignación de código a microcursos</h1>
@@ -1460,13 +1495,17 @@ function irInicio(){
     <div class="saludo">${avatarHTML(u)}<div><div class="sobre-titulo"><i class="punto"></i>${esc(S.school ? S.school.nombre : '')}</div><h1>${saludoHora()}, ${esc(u.given || u.name.split(' ')[0])}</h1></div></div>
     ${bor && bor.curso && bor.curso.nombre ? `<div class="borrador"><span>Tiene un registro sin terminar: <b>${esc(bor.curso.nombre)}</b></span><span class="esp"></span><button class="btn btn-sm btn-texto" id="b-d">Descartar</button><button class="btn btn-sm btn-primario" id="b-c">Continuar</button></div>` : ''}
     <div class="acciones grandes" style="--n:${ops.length}">${ops.map(o => `<button class="accion grande" id="${o[0]}"><div class="ico">${icon(o[1])}</div><div><b>${o[2]}</b><span>${o[3]}</span></div><span class="ir">${o[4]} ${icon('flecha-der')}</span></button>`).join('')}</div>
-    <div class="seccion-tit"><h2>${r === 'director' ? 'Solicitudes de la escuela' : 'Mis registros'}</h2><button class="btn btn-sm btn-texto" id="r-mis">${icon('recargar')}Actualizar</button></div>
-    <div id="mis"><div class="vacio">Cargando…</div></div>
-    ${r === 'director' ? `<div class="seccion-tit" style="margin-top:34px"><h2>Cursos de la escuela en la Plantilla Maestra</h2></div><div id="pm"><div class="vacio">Cargando…</div></div>` : ''}</div></main>`;
+    <p style="margin:-20px 0 30px;text-align:right"><button class="btn btn-sm btn-texto" id="a-json" style="font-size:12px;color:var(--tinta-3)">{ } Importar cursos con IA (JSON)</button></p>
+    <div class="${r === 'director' ? 'dos-col' : ''}">
+      <section><div class="seccion-tit"><h2>${r === 'director' ? 'Solicitudes de la escuela' : 'Mis registros'}</h2><button class="btn btn-sm btn-texto" id="r-mis" title="Actualizar">${icon('recargar')}Actualizar</button></div>
+        <div id="mis"><div class="vacio">Cargando…</div></div></section>
+      ${r === 'director' ? `<section><div class="seccion-tit"><h2>Plantilla Maestra</h2>${DEMO ? '' : `<a class="btn btn-sm btn-texto" href="https://docs.google.com/spreadsheets/d/${esc(CFG.SHEET_ID_MAESTRA)}/edit" target="_blank" rel="noopener" title="Abrir la Plantilla Maestra">${icon('externo')}Abrir</a>`}</div><div id="pm"><div class="vacio">Cargando…</div></div></section>` : ''}
+    </div></div></main>`;
   if(r === 'director') pintarCursosMaestra();
   $('#a-uno').addEventListener('click', () => abrirAsistente());
   $('#a-varios').addEventListener('click', abrirMasivo);
   if($('#a-eq')) $('#a-eq').addEventListener('click', pantallaEquipo);
+  if($('#a-json')) $('#a-json').addEventListener('click', dialogoJSON);
   if($('#b-c')) $('#b-c').addEventListener('click', () => abrirAsistente(bor));
   if($('#b-d')) $('#b-d').addEventListener('click', () => { ls.del(claveBorrador()); irInicio(); });
   $('#r-mis').addEventListener('click', () => pintarMios(true));
@@ -1481,9 +1520,29 @@ async function pintarMios(forzar){
   if(!$('#mis')) return;
   pintarNav();
   if(!lista.length){ cont.innerHTML = `<div class="vacio">${gest.length ? 'Aún no hay cursos registrados de su escuela.' : 'Aún no ha registrado cursos con esta cuenta.'}</div>`; return; }
-  cont.innerHTML = `<div class="lista">${lista.slice(0, 20).map((r, i) => `<button class="fila" data-i="${i}"><div class="txt"><b>${esc(r.nombre)}</b><span class="sec">${esc(fmtFecha(r.fecha))}${r.correo !== S.user.email ? ' · ' + esc(r.registradoPor || r.correo) : ''}</span></div>
-    ${r.codigoAsignado ? `<span class="nota" style="font-weight:700;color:var(--tinta-2)">${esc(r.codigoAsignado)}</span>` : ''}${ETQ[estadoDe(r)]}</button>`).join('')}</div>`;
-  $$('.fila', cont).forEach(b => b.addEventListener('click', () => verDetalle(lista[+b.dataset.i])));
+  const grupos = [['', 'Todas'], ['rev', 'En revisión'], ['obs', 'Con observaciones'], ['apr', 'Aprobadas']];
+  const grupoDe = r => { const e = estadoDe(r); return e === 'Pendiente' ? 'rev' : e === 'Con observaciones' ? 'obs' : e === 'Eliminado' ? 'eli' : 'apr'; };
+  const st = cont._st || (cont._st = { q:'', g:'', pag:0 });
+  const pintar = () => {
+    const q = norm(st.q);
+    const fil = lista.filter(r => (!st.g || grupoDe(r) === st.g) && (!q || norm([r.nombre, r.codigoAsignado, r.registradoPor, r.correo].join(' ')).includes(q)));
+    const porPag = 5, paginas = Math.max(1, Math.ceil(fil.length / porPag)); st.pag = Math.min(st.pag, paginas - 1);
+    const vis = fil.slice(st.pag * porPag, st.pag * porPag + porPag);
+    $('#mis-lista').innerHTML = vis.length ? `<div class="lista">${vis.map(r => `<div class="fila" style="cursor:pointer" data-id="${esc(r.id)}"><div class="txt"><b>${esc(r.nombre)}</b><span class="sec">${esc(fmtFecha(r.fecha))}${r.correo !== S.user.email ? ' · ' + esc(r.registradoPor || r.correo) : ''}${r.codigoAsignado ? ' · <b style="display:inline;color:var(--azul)">' + esc(r.codigoAsignado) + '</b>' : ''}</span></div>
+      ${ETQ[estadoDe(r)]}<button class="btn-icono" data-pdf="${esc(r.id)}" title="Descargar comprobante">${icon('pdf')}</button></div>`).join('')}</div>` : '<div class="vacio">No hay solicitudes con ese filtro.</div>';
+    $('#mis-pie').innerHTML = `<span>${fil.length} solicitud(es)${paginas > 1 ? ` · página ${st.pag + 1} de ${paginas}` : ''}</span>${paginas > 1 ? `<span class="botones"><button class="btn btn-sm btn-suave" id="mis-ant" ${st.pag === 0 ? 'disabled' : ''}>${icon('izq')}</button><button class="btn btn-sm btn-suave" id="mis-sig" ${st.pag >= paginas - 1 ? 'disabled' : ''}>${icon('der')}</button></span>` : ''}`;
+    if($('#mis-ant')) $('#mis-ant').addEventListener('click', () => { st.pag--; pintar(); });
+    if($('#mis-sig')) $('#mis-sig').addEventListener('click', () => { st.pag++; pintar(); });
+    $$('#mis-lista .fila').forEach(f => f.addEventListener('click', e => { const r = lista.find(x => x.id === f.dataset.id); if(e.target.closest('[data-pdf]')) generarPDF([r], r.fecha); else verDetalle(r); }));
+    $$('.chips-f button', cont).forEach(b => b.classList.toggle('sel', b.dataset.g === st.g));
+  };
+  const cuenta = g => lista.filter(r => !g || grupoDe(r) === g).length;
+  cont.innerHTML = `<div class="pm-filtros"><div class="buscador">${icon('buscar')}<input type="search" id="mis-q" placeholder="Buscar por nombre, código o persona" value="${esc(st.q)}"></div>
+    <div class="chips-f">${grupos.map(([g, t]) => `<button data-g="${g}">${t}<span class="c">${cuenta(g)}</span></button>`).join('')}</div></div>
+    <div id="mis-lista"></div><div class="paginador" id="mis-pie"></div>`;
+  $$('.chips-f button', cont).forEach(b => b.addEventListener('click', () => { st.g = b.dataset.g; st.pag = 0; pintar(); }));
+  let t; $('#mis-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { st.q = e.target.value; st.pag = 0; pintar(); }, 200); });
+  pintar();
 }
 /** Inicio de Desarrollo Curricular (administración y revisión): sin escuela, con el estado del trabajo. */
 async function inicioDCD(){
@@ -1781,9 +1840,11 @@ function pintarMasivo(){
         <div class="paso-m"><div class="num">PASO 2</div><b>Un curso por fila</b><span>Los encabezados en azul oscuro son obligatorios.</span></div>
         <div class="paso-m"><div class="num">PASO 3</div><b>Súbala y revise</b><span>Podrá corregir cualquier curso aquí mismo.</span></div>
       </div>
-      <div class="zona" id="zona" tabindex="0" role="button">${icon('subir')}<b>Arrastre aquí su archivo de Excel</b><span>o haga clic para seleccionarlo</span></div></div></main>`;
+      <div class="zona" id="zona" tabindex="0" role="button">${icon('subir')}<b>Arrastre aquí su archivo de Excel</b><span>o haga clic para seleccionarlo</span></div>
+      <p style="text-align:center;margin:14px 0 0"><button class="btn btn-sm btn-texto" id="abrir-json">{ } ¿Preparó la información con IA? Pegue un JSON</button></p></div></main>`;
     $('#v').addEventListener('click', irInicio);
     $('#plantilla').addEventListener('click', descargarPlantilla);
+    $('#abrir-json').addEventListener('click', dialogoJSON);
     const z = $('#zona');
     z.addEventListener('click', () => $('#archivo').click());
     z.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') $('#archivo').click(); });
@@ -1805,7 +1866,7 @@ function pintarMasivo(){
   $('#agregar').addEventListener('click', () => { B.cursos.push(cursoNuevo(S.school.nombre)); B.idx = B.cursos.length - 1; B.vista = 'ficha'; pintarMasivo(); });
   $('#otro-arch').addEventListener('click', () => $('#archivo').click());
   if($('#ir-err')) $('#ir-err').addEventListener('click', () => { B.idx = errs.findIndex(e => Object.keys(e).length); B.vista = 'ficha'; pintarMasivo(); });
-  $('#enviar-todos').addEventListener('click', () => registrar(B.cursos, 'Carga masiva', $('#cc-yo').checked));
+  $('#enviar-todos').addEventListener('click', () => registrar(B.cursos, B.origen || 'Carga masiva', $('#cc-yo').checked));
   const abrir = i => { B.idx = i; B.vista = 'ficha'; pintarMasivo(); };
   const vista = $('#vista');
   if(B.vista === 'lista') tablaCursos(vista, B.cursos, errs, abrir, quitarCurso);
@@ -1908,6 +1969,94 @@ async function leerExcel(archivo){
     pintarMasivo();
   } catch(e){ toast(e.message, 'error', 6000); }
   finally { finEspera(); }
+}
+/* ---------- Importar desde IA (JSON) ---------- */
+function promptJSON(){
+  const escuela = S.school ? S.school.nombre : (S.boot.schools[0] || {}).nombre;
+  return `Actúa como asistente de Desarrollo Curricular de la Universidad CENFOTEC. Con la información de los cursos que te compartí (o que te compartiré a continuación), genera ÚNICAMENTE un JSON válido, sin texto antes ni después y sin bloques de código, con esta estructura exacta:
+
+{
+  "cursos": [
+    {
+      "escuela": "${escuela}",
+      "asigna_dcd": true,
+      "codigo_propuesto": "",
+      "nombre": "",
+      "moneda": ["Dólares"],
+      "horas_lectivas": 24,
+      "descripcion": "",
+      "nivel": "Básico",
+      "perfil_ingreso": "",
+      "requisitos_indispensables": "",
+      "requisitos_deseables": "",
+      "software_requerido": "",
+      "equipo_tecnologico": "",
+      "roles": "",
+      "palabras_clave": "",
+      "contenidos": "",
+      "certificacion": { "tiene": false, "casa_certificadora": "", "enlace": "" },
+      "enlace_programa": ""
+    }
+  ]
+}
+
+Reglas obligatorias:
+1. Incluye un objeto por cada curso y TODOS los campos en cada uno, aunque queden vacíos ("").
+2. "escuela": una de estas, escrita igual: ${S.boot.schools.map(x => x.nombre).join('; ')}.
+3. "asigna_dcd": true si Desarrollo Curricular asigna el código; false solo si ya hay un código, que va en "codigo_propuesto" (ej. ${prefijo(escuela)}-601).
+4. "moneda": lista con "Dólares", "Colones" o ambas.
+5. "horas_lectivas": número entero (16, 24, 32 u otra cantidad).
+6. "nivel": exactamente "Básico", "Intermedio" o "Avanzado".
+7. "perfil_ingreso": conocimientos previos que requiere la persona estudiante, en prosa.
+8. Requisitos, software y equipo: texto; deja "" si no aplica (equivale a «Ninguno»). Los requisitos son códigos de cursos separados por coma.
+9. "roles" y "palabras_clave": texto separado por comas.
+10. "contenidos": temas principales numerados en un solo texto (separa cada tema con \\n).
+11. "certificacion.tiene": true solo si el curso otorga certificación; en ese caso completa "casa_certificadora" y "enlace" (https://).
+12. "enlace_programa": enlace al programa si existe; si no, "".
+13. No inventes datos: si algo no está en la información, déjalo vacío para completarlo después.`;
+}
+function cursoDesdeJSON(o){
+  const t = v => Array.isArray(v) ? v.join(', ') : v == null ? '' : typeof v === 'object' ? '' : String(v);
+  const g = (...ks) => { for(const k of ks){ const key = Object.keys(o).find(x => norm(x).replace(/[\s_-]/g, '') === k); if(key !== undefined) return o[key]; } return ''; };
+  const cert = g('certificacion') || {};
+  const asigna = g('asignadcd');
+  const f = {
+    escuela: t(g('escuela')), asignaDCD: asigna === false || /^(no|false)$/i.test(String(asigna)) ? 'No' : (asigna === '' ? '' : 'Sí'), codigo: t(g('codigopropuesto', 'codigo')),
+    nombre: t(g('nombre', 'nombredelcurso')), moneda: (Array.isArray(g('moneda')) ? g('moneda') : [g('moneda')]).join(' y '), horas: t(g('horaslectivas', 'horas')),
+    descripcion: t(g('descripcion')), nivel: t(g('nivel', 'niveldecomplejidad')), perfil: t(g('perfilingreso', 'perfildeingreso', 'perfil')),
+    reqInd: t(g('requisitosindispensables')), reqDes: t(g('requisitosdeseables')), software: t(g('softwarerequerido', 'software')), equipo: t(g('equipotecnologico', 'equipo')),
+    roles: t(g('roles')), palabras: t(g('palabrasclave')), contenidos: Array.isArray(g('contenidos')) ? g('contenidos').join('\n') : t(g('contenidos')),
+    cert: typeof cert === 'object' ? (cert.tiene === true || /^(si|sí|true)$/i.test(String(cert.tiene)) ? 'Sí' : 'No') : t(cert),
+    certCasa: typeof cert === 'object' ? t(cert.casa_certificadora || cert.casa) : '', certLink: typeof cert === 'object' ? t(cert.enlace) : '',
+    programa: t(g('enlaceprograma', 'programa'))
+  };
+  return cursoDesdeFila(f);
+}
+function dialogoJSON(){
+  const z = document.createElement('div');
+  z.innerHTML = `<ol class="pasos-g" style="margin:0 0 4px">
+      <li><span class="n">1</span><span>Copie el prompt y péguelo en su IA (ChatGPT, Claude, Gemini…) junto con la información de sus cursos.</span></li>
+      <li><span class="n">2</span><span>Copie el JSON que le devuelva y péguelo abajo.</span></li>
+      <li><span class="n">3</span><span>Revise los cursos antes de registrarlos, igual que con el Excel.</span></li></ol>
+    <button class="btn btn-suave btn-sm" id="cp-prompt" style="margin-top:10px">${icon('hoja')}Copiar prompt para JSON</button>
+    <div class="campo"><label for="js-txt">JSON de los cursos</label><textarea id="js-txt" rows="10" spellcheck="false" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px" placeholder='{ "cursos": [ { "nombre": "…" } ] }'></textarea><div class="err" id="js-err" style="display:none"></div></div>`;
+  $('#cp-prompt', z).addEventListener('click', async () => {
+    const p = promptJSON();
+    try { await navigator.clipboard.writeText(p); toast('Prompt copiado. Péguelo en su IA.'); }
+    catch(e){ const ta = document.createElement('textarea'); ta.value = p; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Prompt copiado.'); }
+  });
+  modal({ titulo:'Importar cursos con IA', ancho:true, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('flecha-der')}Revisar cursos`, clase:'btn-primario', accion: () => {
+    const err = m => { const e = $('#js-err', z); e.innerHTML = `${icon('alerta')}<span>${esc(m)}</span>`; e.style.display = 'flex'; return false; };
+    let txt = $('#js-txt', z).value.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    const a = txt.search(/[\[{]/); if(a > 0) txt = txt.slice(a);
+    let data; try { data = JSON.parse(txt); } catch(e){ return err('El texto no es un JSON válido. Pida a la IA que devuelva solo el JSON, sin explicaciones.'); }
+    const lista = Array.isArray(data) ? data : Array.isArray(data.cursos) ? data.cursos : (data && typeof data === 'object' ? [data] : []);
+    if(!lista.length) return err('No se encontraron cursos en el JSON.');
+    if(lista.length > 100) return err(`El JSON tiene ${lista.length} cursos; el máximo por envío es 100.`);
+    const cursos = lista.filter(o => o && typeof o === 'object').map(cursoDesdeJSON);
+    S.bulk = { cursos, vista:'lista', idx:0, archivo:'Importado con IA (JSON)', origen:'Importación JSON' };
+    setTimeout(pintarMasivo, 30); return true;
+  } }] });
 }
 function cursoDesdeFila(f){
   const c = cursoNuevo(S.school ? S.school.nombre : '');
@@ -2103,6 +2252,8 @@ async function corregirRegistro(r, c, copia){
 /* =========================================================================
    REVISIÓN (Desarrollo Curricular)
    ========================================================================= */
+const modoBorrador = () => !/^enviar/i.test(String((S.boot && S.boot.correos.MODO_ENVIO) || 'Borrador').trim());
+const destinosEscuela = e => { const v = (S.boot.correos || {})['AVISO_ESCUELA::' + e]; return v != null && String(v).trim() ? listaCorreos(v) : (escuelaDe(e).correos || []); };
 const saludo = () => new Date().getHours() < 12 ? 'Buenos días' : 'Buenas tardes';
 const firma = () => `${S.user.name}\nDesarrollo Curricular y Docente\nUniversidad CENFOTEC`;
 const rellenar = (tpl, v) => String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => v[k] !== undefined ? v[k] : m);
@@ -2269,7 +2420,7 @@ function dialogoEliminar(cursos){
   const z = document.createElement('div');
   z.innerHTML = `<p style="margin:0;color:var(--tinta-2)">${cursos.length === 1 ? `«<b>${esc(cursos[0].nombre)}</b>»` : `<b>${cursos.length} cursos</b>`} saldrán de pendientes y quedarán marcados como completos en el registro de códigos. No se borran de la hoja ni pasan a la Plantilla Maestra.</p>
     <div class="campo"><label for="el-mot">Motivo (opcional)</label><textarea id="el-mot" rows="3" placeholder="Ej. Registro duplicado"></textarea></div>
-    <label class="check-legal"><input type="checkbox" id="el-avisar"><span>Avisar por correo a quien lo registró</span></label>`;
+    <label class="check-legal"><input type="checkbox" id="el-avisar"><span>Avisar por correo a quien lo registró${modoBorrador() ? ' (queda como borrador en Gmail)' : ''}</span></label>`;
   modal({ titulo: cursos.length === 1 ? 'Eliminar curso' : `Eliminar ${cursos.length} cursos`, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('basura')}Eliminar`, clase:'btn-peligro', accion: async b => {
     const motivo = $('#el-mot', z).value.trim(), avisar = $('#el-avisar', z).checked;
     b.disabled = true; espera('Eliminando…');
@@ -2278,7 +2429,7 @@ function dialogoEliminar(cursos){
         const cam = { included:true, estado:'Eliminado', observacion: motivo ? 'Eliminado: ' + motivo : 'Eliminado por Desarrollo Curricular', revisadoPor:S.user.email, fechaRevision:fechaTexto(new Date()) };
         await Almacen().marcar(r, cam); Object.assign(r, cam);
         if(avisar && r.correo) await Almacen().enviarCorreo({ to:[r.correo], cc:[], subject:`Solicitud eliminada · ${r.nombre}`,
-          html: textoAHtml(`${saludo()}:\n\nLe informamos que la solicitud del curso «${r.nombre}» fue eliminada del registro de códigos.${motivo ? '\n\nMotivo: ' + motivo : ''}\n\nSaludos cordiales,\n${firma()}`) }).catch(() => {});
+          html: textoAHtml(`${saludo()}:\n\nLe informamos que la solicitud del curso «${r.nombre}» fue eliminada del registro de códigos.${motivo ? '\n\nMotivo: ' + motivo : ''}\n\nSaludos cordiales,\n${firma()}`) }, modoBorrador()).catch(() => {});
       }
       if(Almacen().bitacora) Almacen().bitacora('Eliminó solicitudes', cursos.map(r => r.id + ' ' + r.nombre).join(' | ') + (motivo ? ' · ' + motivo : ''));
       finEspera(); S.rev.sel = new Set(); if(S.rev.tab === 'ficha') S.rev.tab = 'pend';
@@ -2291,17 +2442,18 @@ function dialogoObservacion(r){
   const C = S.boot.correos; const escObj = escuelaDe(r.escuela);
   const v = { saludo:saludo(), nombre:(r.registradoPor || '').split(' ')[0] || '', curso:r.nombre, escuela:'Escuela de ' + r.escuela, firma:firma(), observaciones:'{observaciones}' };
   const z = document.createElement('div');
-  z.innerHTML = `${campoCorreos('o-para', 'Para', [r.correo].filter(Boolean))}${campoCorreos('o-cc', 'Copia (dirección de la escuela)', escObj.correos || [])}
+  z.innerHTML = `${campoCorreos('o-para', 'Para', [r.correo].filter(Boolean))}${campoCorreos('o-cc', 'Copia (dirección de la escuela)', destinosEscuela(r.escuela))}
     <div class="campo" style="margin-top:14px"><label for="o-obs">Observaciones</label><textarea id="o-obs" rows="4" placeholder="Qué debe corregir la persona"></textarea></div>
     <div class="campo" style="margin-top:14px"><label for="o-as">Asunto</label><input type="text" id="o-as" value="${esc(rellenar(C.OBS_ASUNTO, v))}"></div>
     <div class="campo" style="margin-top:14px"><label for="o-msj">Mensaje</label><textarea id="o-msj" rows="9">${esc(rellenar(C.OBS_MENSAJE, v))}</textarea><div class="ayuda" style="margin-top:6px">{observaciones} se reemplaza por el texto de arriba.</div></div>`;
-  modal({ titulo:'Enviar observación', ancho:true, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('correo')}Enviar`, clase:'btn-primario', accion: async () => {
+  const borr = modoBorrador();
+  modal({ titulo:'Enviar observación', ancho:true, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('correo')}${borr ? 'Guardar borrador en Gmail' : 'Enviar'}`, clase:'btn-primario', accion: async () => {
     const obs = $('#o-obs', z).value.trim(); if(!obs){ toast('Escriba las observaciones.', 'error'); return false; }
     const correo = { to: listaCorreos($('#o-para', z).value), cc: listaCorreos($('#o-cc', z).value), subject: $('#o-as', z).value, html: textoAHtml($('#o-msj', z).value.replace('{observaciones}', obs)) };
     if(!correo.to.length){ toast('Indique al menos un destinatario.', 'error'); return false; }
     espera('Enviando…');
-    try { await Almacen().enviarCorreo(correo); const cam = { estado:'Con observaciones', observacion: obs, revisadoPor: S.user.email, fechaRevision: fechaTexto(new Date()) }; await Almacen().marcar(r, cam); Object.assign(r, cam);
-      finEspera(); toast('Observación enviada.'); pintarRevision(); return true; }
+    try { await Almacen().enviarCorreo(correo, borr); const cam = { estado:'Con observaciones', observacion: obs, revisadoPor: S.user.email, fechaRevision: fechaTexto(new Date()) }; await Almacen().marcar(r, cam); Object.assign(r, cam);
+      finEspera(); toast(borr ? 'Observación guardada como borrador en Gmail. Revísela y envíela desde allí.' : 'Observación enviada.', '', 5000); pintarRevision(); return true; }
     catch(e){ finEspera(); toast(e.message, 'error', 6000); return false; }
   } }] });
 }
@@ -2327,38 +2479,48 @@ function colaAvisos(cont, notif){
 async function redactarAvisos(sel){
   const C = S.boot.correos; const grupos = {};
   sel.forEach(r => (grupos[r.escuela] = grupos[r.escuela] || []).push(r));
-  const escuelas = Object.keys(grupos); let enviados = 0;
+  const escuelas = Object.keys(grupos); let enviados = 0; const borr = modoBorrador();
   for(let n = 0; n < escuelas.length; n++){
     const e = escuelas[n], cursos = grupos[e];
     const lineas = cursos.flatMap(r => r.codigoAsignado.split(/\s*,\s*/).map(cod => `${cod} ${r.nombre}`));
     const v = { saludo:saludo(), escuela:'Escuela de ' + e, cursos: lineas.join('\n'), cantidad:String(lineas.length), firma:firma() };
     const z = document.createElement('div');
-    z.innerHTML = `${campoCorreos('a-para', 'Para', [...new Set(listaCorreos(C.AVISO_PARA_FIJOS).concat(escuelaDe(e).correos || []))])}${campoCorreos('a-cc', 'Copia', listaCorreos(C.AVISO_CC_FIJOS))}
+    z.innerHTML = `${campoCorreos('a-para', 'Para', [...new Set(listaCorreos(C.AVISO_PARA_FIJOS).concat(destinosEscuela(e)))])}${campoCorreos('a-cc', 'Copia', listaCorreos(C.AVISO_CC_FIJOS))}
       <div class="campo" style="margin-top:14px"><label for="a-as">Asunto</label><input type="text" id="a-as" value="${esc(rellenar(C.AVISO_ASUNTO, v))}"></div>
       <div class="campo" style="margin-top:14px"><label for="a-msj">Mensaje</label><textarea id="a-msj" rows="16">${esc(rellenar(C.AVISO_MENSAJE, v))}</textarea></div>`;
-    const res = await modal({ titulo:`Aviso ${n + 1} de ${escuelas.length} · ${e}`, ancho:true, cuerpo:z, acciones:[{ texto: n < escuelas.length - 1 ? 'Omitir esta escuela' : 'Omitir', valor:'omitir' }, { html:`${icon('correo')}Enviar aviso`, clase:'btn-primario', valor:'ok', accion: async () => {
+    const res = await modal({ titulo:`Aviso ${n + 1} de ${escuelas.length} · ${e}`, ancho:true, cuerpo:z, acciones:[{ texto: n < escuelas.length - 1 ? 'Omitir esta escuela' : 'Omitir', valor:'omitir' }, { html:`${icon('correo')}${borr ? 'Guardar borrador en Gmail' : 'Enviar aviso'}`, clase:'btn-primario', valor:'ok', accion: async () => {
       const correo = { to: listaCorreos($('#a-para', z).value), cc: listaCorreos($('#a-cc', z).value), subject: $('#a-as', z).value, html: textoAHtml($('#a-msj', z).value) };
-      if(!correo.to.length){ toast('Indique al menos un destinatario. Puede configurar los correos de cada escuela en Configuración.', 'error', 6000); return false; }
-      espera('Enviando aviso…');
-      try { await Almacen().enviarCorreo(correo); const f = fechaTexto(new Date()); for(const r of cursos){ await Almacen().marcar(r, { notificado:f }); r.notificado = f; } finEspera(); enviados++; return true; }
+      if(!correo.to.length){ toast('Indique al menos un destinatario. Puede configurarlos en Revisión → Correos.', 'error', 6000); return false; }
+      espera(borr ? 'Guardando borrador…' : 'Enviando aviso…');
+      try { await Almacen().enviarCorreo(correo, borr); const f = (borr ? 'Borrador ' : '') + fechaTexto(new Date()); for(const r of cursos){ await Almacen().marcar(r, { notificado:f }); r.notificado = f; } finEspera(); enviados++; return true; }
       catch(err){ finEspera(); toast(err.message, 'error', 6000); return false; }
     } }] });
     if(res === null) break;
   }
   S.rev.sel = new Set();
-  if(enviados) toast(`${enviados} aviso(s) enviados.`);
+  if(enviados) toast(borr ? `${enviados} aviso(s) guardados como borrador en Gmail. Revíselos y envíelos desde allí.` : `${enviados} aviso(s) enviados.`, '', 6000);
   pintarRevision();
 }
 function formCorreos(cont){
   const C = S.boot.correos;
   const campos = [['AVISO_PARA_FIJOS','Aviso de cursos aprobados · Para (siempre)','input'], ['AVISO_CC_FIJOS','Aviso · Copia (siempre)','input'], ['AVISO_ASUNTO','Aviso · Asunto','input'], ['AVISO_MENSAJE','Aviso · Mensaje','area'],
     ['OBS_ASUNTO','Observación · Asunto','input'], ['OBS_MENSAJE','Observación · Mensaje','area'], ['ESTADO_INICIAL_PM','Estado con que entran los cursos a la Plantilla Maestra','estado']];
-  cont.innerHTML = `<div class="angosto"><div class="tarjeta form-tarjeta"><h2>Plantillas de correo</h2><p class="intro">Los correos de cada escuela se suman solos al aviso. Variables: <code>{saludo}</code> <code>{escuela}</code> <code>{cursos}</code> <code>{cantidad}</code> <code>{nombre}</code> <code>{curso}</code> <code>{observaciones}</code> <code>{firma}</code>.</p>
-    ${campos.map(([k, l, t]) => `<div class="campo"><label for="c-${k}">${l}</label>${t === 'area' ? `<textarea id="c-${k}" rows="${k === 'AVISO_MENSAJE' ? 14 : 9}">${esc(C[k] || '')}</textarea>` : t === 'estado' ? `<select id="c-${k}">${['EN PRODUCCIÓN','EN DESARROLLO','INACTIVO'].map(o => `<option ${C[k] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>` : `<input type="text" id="c-${k}" value="${esc(C[k] || '')}">`}</div>`).join('')}
-    <div class="pie-form"><span></span><button class="btn btn-primario" id="g-c">Guardar plantillas</button></div></div></div>`;
+  const borr = modoBorrador();
+  cont.innerHTML = `<div class="angosto">
+    <div class="tarjeta form-tarjeta"><h2>Forma de envío</h2><p class="intro">Aplica a los avisos a las escuelas, las observaciones y los avisos de eliminación.</p>
+      <div class="campo"><div class="opciones"><button type="button" class="op ancha ${borr ? 'sel' : ''}" data-modo="Borrador"><span>Guardar como borrador en Gmail<small>Recomendado mientras se prueba: usted revisa y envía desde Gmail.</small></span></button>
+        <button type="button" class="op ancha ${borr ? '' : 'sel'}" data-modo="Enviar"><span>Enviar de una vez<small>El correo sale en cuanto se confirma en la herramienta.</small></span></button></div></div></div>
+    <div class="tarjeta form-tarjeta" style="margin-top:16px"><h2>Destinatarios por escuela</h2><p class="intro">Reciben el aviso de cursos aprobados de su escuela (además de los fijos) y la copia de las observaciones. Si deja una vacía, se usan los correos de la dirección configurados por la administración.</p>
+      ${S.boot.schools.map(e => `<div class="campo"><label for="ae-${esc(e.prefijo)}"><i class="punto" style="background:${esc(e.color)};margin-right:7px"></i>${esc(e.nombre)}</label><input type="text" id="ae-${esc(e.prefijo)}" data-esc="${esc(e.nombre)}" value="${esc(C['AVISO_ESCUELA::' + e.nombre] || '')}" placeholder="${esc((e.correos || []).join(', ') || 'correo@ucenfotec.ac.cr, …')}"></div>`).join('')}</div>
+    <div class="tarjeta form-tarjeta" style="margin-top:16px"><h2>Plantillas de correo</h2><p class="intro">Variables: <code>{saludo}</code> <code>{escuela}</code> <code>{cursos}</code> <code>{cantidad}</code> <code>{nombre}</code> <code>{curso}</code> <code>{observaciones}</code> <code>{firma}</code>.</p>
+    ${campos.map(([k, l, t]) => `<div class="campo"><label for="c-${k}">${l}</label>${t === 'area' ? `<textarea id="c-${k}" rows="${k === 'AVISO_MENSAJE' ? 14 : 9}">${esc(C[k] || '')}</textarea>` : t === 'estado' ? `<select id="c-${k}">${['EN PRODUCCIÓN','EN DESARROLLO','INACTIVO'].map(o => `<option ${C[k] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>` : `<input type="text" id="c-${k}" value="${esc(C[k] || '')}">`}</div>`).join('')}</div>
+    <div class="pie-fijo"><span class="esp"></span><button class="btn btn-primario" id="g-c">Guardar cambios</button></div></div>`;
+  let modo = borr ? 'Borrador' : 'Enviar';
+  $$('[data-modo]', cont).forEach(b => b.addEventListener('click', () => { modo = b.dataset.modo; $$('[data-modo]', cont).forEach(x => x.classList.toggle('sel', x === b)); }));
   $('#g-c').addEventListener('click', async () => {
-    const pares = {}; campos.forEach(([k]) => pares[k] = $('#c-' + k).value);
-    espera('Guardando…'); try { await Almacen().guardarCorreos(pares); Object.assign(S.boot.correos, pares); finEspera(); toast('Plantillas guardadas.'); } catch(e){ finEspera(); toast(e.message, 'error'); }
+    const pares = { MODO_ENVIO: modo }; campos.forEach(([k]) => pares[k] = $('#c-' + k).value);
+    $$('[data-esc]', cont).forEach(i => pares['AVISO_ESCUELA::' + i.dataset.esc] = listaCorreos(i.value).join(', '));
+    espera('Guardando…'); try { await Almacen().guardarCorreos(pares); Object.assign(S.boot.correos, pares); finEspera(); toast('Cambios guardados.'); } catch(e){ finEspera(); toast(e.message, 'error'); }
   });
 }
 
