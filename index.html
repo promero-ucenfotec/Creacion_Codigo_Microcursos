@@ -458,7 +458,7 @@ table.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .toast{background:var(--tinta);color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;box-shadow:0 10px 30px rgba(8,26,58,.25);display:flex;gap:10px;align-items:center;animation:sube .25s ease;max-width:90vw;font-weight:500}
 .toast.error{background:#9b2c2c}
 #espera{position:fixed;inset:0;background:rgba(245,247,251,.82);backdrop-filter:blur(2px);z-index:250;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-weight:600;color:var(--tinta-2);font-size:13.5px}
-.giro{width:34px;height:34px;border-radius:50%;border:3px solid var(--celeste-soft);border-top-color:var(--azul2);animation:gira .8s linear infinite}
+.giro{width:34px;height:34px;border-radius:50%;border:3px solid var(--celeste-soft);border-top-color:var(--azul2);border-right-color:var(--azul2);animation:gira .75s cubic-bezier(.5,.15,.5,.85) infinite;will-change:transform}
 @keyframes gira{to{transform:rotate(360deg)}}
 .cargando{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:18px;color:#c9d9f3;font-size:13.5px;background:var(--azul)}
 
@@ -482,8 +482,8 @@ table.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .fiesta .bola{display:block;width:var(--t);transform-origin:50% 0;animation:pendulo var(--p) ease-in-out infinite alternate;filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
 @keyframes pendulo{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
 .fiesta .copo{display:block;width:var(--t);height:var(--t);border-radius:50%;background:#fff;opacity:var(--o)}
-.fiesta .confeti{display:block;width:var(--t);height:calc(var(--t) * .45);background:var(--k);border-radius:2px;animation:gira var(--p) linear infinite}
-@keyframes gira{from{transform:rotate3d(1,.4,0,0deg)}to{transform:rotate3d(1,.4,0,360deg)}}
+.fiesta .confeti{display:block;width:var(--t);height:calc(var(--t) * .45);background:var(--k);border-radius:2px;animation:voltea var(--p) linear infinite}
+@keyframes voltea{from{transform:rotate3d(1,.4,0,0deg)}to{transform:rotate3d(1,.4,0,360deg)}}
 .fiesta .bandera{display:block;width:var(--t);height:calc(var(--t) * .6);border-radius:2px;background:linear-gradient(#002b7f 0 16.6%,#fff 0 33.3%,#ce1126 0 66.6%,#fff 0 83.3%,#002b7f 0);animation:ondea var(--p) ease-in-out infinite alternate;box-shadow:0 3px 8px rgba(0,0,0,.15)}
 @keyframes ondea{from{transform:rotate(-18deg) skewY(-6deg)}to{transform:rotate(18deg) skewY(6deg)}}
 .fiesta .chispa{position:absolute;left:var(--x);top:var(--y);width:0;height:0}
@@ -1522,7 +1522,39 @@ function temporadaHoy(d = new Date()){
   return TEMPORADAS.find(([, , a, b]) => { const x = a[0] * 100 + a[1], y = b[0] * 100 + b[1]; return x <= y ? n >= x && n <= y : n >= x || n <= y; }) || null;
 }
 const clavePref = () => 'dcd_pref_' + (S.user ? S.user.email : '');
-const prefs = () => Object.assign({ temporada:true }, ls.get(clavePref()) || {});
+const prefs = () => Object.assign({ temporada:true, sonido:true }, ls.get(clavePref()) || {});
+/* Sonidos pequeños al terminar de cargar: se generan en el navegador (sin archivos externos). */
+let AUDIO = null;
+function audio(){ try { AUDIO = AUDIO || new (window.AudioContext || window.webkitAudioContext)(); if(AUDIO.state === 'suspended') AUDIO.resume(); return AUDIO; } catch(e){ return null; } }
+document.addEventListener('pointerdown', () => { if(prefs().sonido) audio(); }, { once:true, capture:true });
+function tono(ctx, salida, f, t0, dur, vol, tipo = 'sine'){
+  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(salida); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function ruido(ctx, salida, t0, dur, vol, fc){
+  const n = Math.floor(ctx.sampleRate * dur), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+  for(let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+  src.buffer = b; bp.type = 'bandpass'; bp.frequency.value = fc; bp.Q.value = 6; g.gain.value = vol;
+  src.connect(bp).connect(g).connect(salida); src.start(t0);
+}
+function sonidoListo(t){
+  if(!prefs().sonido) return;
+  const ctx = audio(); if(!ctx || ctx.state !== 'running') return;
+  const m = ctx.createGain(); m.gain.value = 0.22; m.connect(ctx.destination);
+  const a = ctx.currentTime + 0.02, id = t ? t[0] : '';
+  if(id === 'navidad'){            // cascabeles
+    [0, 0.09, 0.17, 0.32].forEach((d, i) => { const v = i === 3 ? 1 : 0.7;
+      ruido(ctx, m, a + d, 0.16, 0.5 * v, 7200); [2650, 3720, 5180].forEach((f, k) => tono(ctx, m, f * (1 + (Math.random() - .5) * .02), a + d, 0.28, 0.06 * v / (k + 1))); });
+  } else if(id === 'anio-nuevo'){  // destello ascendente
+    [1046.5, 1318.5, 1568, 2093].forEach((f, i) => { tono(ctx, m, f, a + i * 0.07, 0.5, 0.09, 'triangle'); tono(ctx, m, f * 2.01, a + i * 0.07, 0.25, 0.025); });
+  } else if(id === 'patrio'){      // marimba
+    [[392, 0], [523.25, 0.11], [659.25, 0.22], [783.99, 0.36]].forEach(([f, d]) => { tono(ctx, m, f, a + d, 0.45, 0.16); tono(ctx, m, f * 4, a + d, 0.08, 0.04); });
+  } else {                          // aviso suave
+    tono(ctx, m, 659.25, a, 0.35, 0.1); tono(ctx, m, 987.77, a + 0.1, 0.5, 0.09);
+  }
+}
 const azar = (a, b) => a + Math.random() * (b - a);
 const unoDe = l => l[Math.floor(Math.random() * l.length)];
 function bolaSVG(c){
@@ -1558,9 +1590,12 @@ function dialogoPreferencias(){
   z.innerHTML = `<p style="margin:0 0 4px;color:var(--tinta-2)">Estas opciones se guardan solo para usted, en este navegador.</p>
     <div class="pref-fila"><div style="flex:1"><b>Animaciones de temporada</b><small>Al entrar a la herramienta se muestra una animación según la fecha. ${t ? `Hoy corresponde a <b style="display:inline;font-size:inherit">${esc(t[1])}</b> (${rangoTemp(t)}).` : 'Hoy no hay ninguna temporada activa.'}</small></div>
       <label class="interruptor" title="Mostrar u ocultar"><input type="checkbox" id="pf-temp" ${pr.temporada ? 'checked' : ''}><span></span></label></div>
+    <div class="pref-fila" style="border-top:1px solid #edf1f7"><div style="flex:1"><b>Sonido al terminar de cargar</b><small>Un sonido muy corto cuando todo está listo: cascabeles en Navidad, un destello en Año nuevo, marimba en el Mes patrio y un aviso suave el resto del año.</small></div>
+      <label class="interruptor" title="Activar o silenciar"><input type="checkbox" id="pf-son" ${pr.sonido ? 'checked' : ''}><span></span></label></div>
     <div style="border-top:1px solid #edf1f7;padding-top:12px"><small style="color:var(--tinta-3);font-size:12.5px">Vista previa</small>
       <div class="temp-prueba">${TEMPORADAS.map(x => `<button type="button" class="btn btn-sm btn-suave" data-tp="${x[0]}">${esc(x[1])} <span style="color:var(--tinta-3);font-weight:500">· ${rangoTemp(x)}</span></button>`).join('')}</div></div>`;
   $('#pf-temp', z).addEventListener('change', e => { ls.set(clavePref(), Object.assign(prefs(), { temporada:e.target.checked })); toast(e.target.checked ? 'Verá las animaciones de temporada al entrar.' : 'Listo, ya no verá las animaciones de temporada.'); });
+  $('#pf-son', z).addEventListener('change', e => { ls.set(clavePref(), Object.assign(prefs(), { sonido:e.target.checked })); if(e.target.checked){ audio(); setTimeout(() => sonidoListo(temporadaHoy()), 60); toast('Sonido activado.'); } else toast('Sonido silenciado.'); });
   $$('[data-tp]', z).forEach(b => b.addEventListener('click', ev => {
     const c = getComputedStyle(document.documentElement).getPropertyValue('--school').trim() || '#164a98';
     animarEntrada(c, S.school ? 'Escuela de' : 'Desarrollo Curricular y Docente', S.school ? S.school.nombre : NOMBRE_ROL[rolEf()], ev, sleep(600), () => {}, TEMPORADAS.find(x => x[0] === b.dataset.tp));
@@ -1571,7 +1606,8 @@ function dialogoPreferencias(){
 async function animarEntrada(color, pre, nombre, ev, tarea, alFinal, temp){
   const cort = $('#cortina'), sinc = $('.sinc', cort), txt = $('.txt', sinc);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){ await tarea.catch(() => {}); alFinal(); return; }
-  pintarTemporada($('.fiesta', cort), temp !== undefined ? temp : (prefs().temporada ? temporadaHoy() : null));
+  const tempo = temp !== undefined ? temp : (prefs().temporada ? temporadaHoy() : null);
+  pintarTemporada($('.fiesta', cort), tempo);
   cort.style.setProperty('--x', (ev ? ev.clientX : innerWidth / 2) + 'px'); cort.style.setProperty('--y', (ev ? ev.clientY : innerHeight / 2) + 'px'); cort.style.setProperty('--c', color);
   $('.pre', cort).textContent = pre; $('.nom', cort).textContent = nombre;
   sinc.className = 'sinc'; txt.textContent = 'Estamos preparando todo para usted';
@@ -1581,6 +1617,7 @@ async function animarEntrada(color, pre, nombre, ev, tarea, alFinal, temp){
   await Promise.all([sleep(1500), tarea.catch(() => {})]);
   sinc.classList.add('listo');
   txt.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Todo listo';
+  sonidoListo(tempo);
   alFinal();
   await sleep(800);
   cort.className = 'cierra'; await sleep(520); cort.className = ''; $('.fiesta', cort).innerHTML = '';
