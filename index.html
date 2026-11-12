@@ -631,8 +631,10 @@ function cargarScript(src){
 const HORAS = ['16','24','32','Otro'];
 const NIVELES = ['Básico','Intermedio','Avanzado'];
 const MONEDAS = ['Dólares','Colones'];
+const MODALIDADES = ['Presencial','Virtual en vivo','Híbrida'];
+const MODALIDAD_DEFECTO = 'Virtual en vivo';
 const TOGGLES = ['reqInd','reqDes','software','equipo'];
-const cursoNuevo = escuela => ({ escuela: escuela || '', asignaDCD:'Sí', codigo:'', nombre:'', moneda:[], horas:'', horasOtro:'', descripcion:'', nivel:'', perfil:'',
+const cursoNuevo = escuela => ({ escuela: escuela || '', asignaDCD:'Sí', codigo:'', nombre:'', moneda:[], modalidad:MODALIDAD_DEFECTO, horas:'', horasOtro:'', descripcion:'', nivel:'', perfil:'',
   reqIndOn:false, reqInd:'', reqDesOn:false, reqDes:'', softwareOn:false, software:'', equipoOn:false, equipo:'', roles:'', palabras:'', contenidos:'', cert:'No', certCasa:'', certLink:'', programa:'' });
 const escuelaDe = n => (S.boot && S.boot.schools.find(s => s.nombre === n)) || {};
 const colorDe = n => escuelaDe(n).color || '#164a98';
@@ -644,6 +646,7 @@ const CAMPOS = {
                 sub:[{ cuando:'No', key:'codigo', tipo:'text', label:'Código propuesto', ph:c => `Ej. ${prefijo(c.escuela)}-601`, mayus:true }] },
   nombre:     { label:'Nombre del curso', tipo:'text', req:true, ph:'Nombre oficial' },
   moneda:     { label:'Moneda', tipo:'multi', req:true, opciones:MONEDAS, ayuda:'Puede seleccionar ambas.' },
+  modalidad:  { label:'Modalidad', tipo:'chips', req:true, opciones:MODALIDADES },
   horas:      { label:'Horas lectivas', tipo:'chips', req:true, opciones:HORAS, sub:[{ cuando:'Otro', key:'horasOtro', tipo:'number', label:'Cantidad de horas', ph:'Ej. 40' }] },
   descripcion:{ label:'Descripción', tipo:'textarea', filas:4, req:true, ph:'De qué trata el curso y qué logrará la persona estudiante' },
   nivel:      { label:'Nivel de complejidad', tipo:'chips', req:true, opciones:NIVELES },
@@ -660,7 +663,7 @@ const CAMPOS = {
   programa:   { label:'Enlace al programa del curso', tipo:'url', ayuda:'Google Drive u OneDrive, con permiso de lectura.', ph:'https://' }
 };
 const PASOS = [
-  { titulo:'Datos generales', intro:'Lo esencial para identificar el curso.', campos:['escuela','asignaDCD','nombre','moneda','horas','descripcion'] },
+  { titulo:'Datos generales', intro:'Lo esencial para identificar el curso.', campos:['escuela','asignaDCD','nombre','moneda','modalidad','horas','descripcion'] },
   { titulo:'Perfil y requisitos', intro:'A quién va dirigido y qué necesita para llevarlo.', campos:['nivel','perfil','reqInd','reqDes','software','equipo'] },
   { titulo:'Contenidos', intro:'Qué aprenderá y si otorga certificación.', campos:['roles','palabras','contenidos','cert','programa'] }
 ];
@@ -673,6 +676,7 @@ function validarCurso(c, campos = TODOS){
   if(has('asignaDCD')){ if(!['Sí','No'].includes(c.asignaDCD)) e.asignaDCD = 'Seleccione una opción.'; else if(c.asignaDCD === 'No' && !t(c.codigo)) e.asignaDCD = 'Escriba el código propuesto.'; }
   if(has('nombre') && !t(c.nombre)) e.nombre = 'Escriba el nombre del curso.';
   if(has('moneda') && !(c.moneda || []).length) e.moneda = 'Seleccione al menos una moneda.';
+  if(has('modalidad') && !MODALIDADES.includes(c.modalidad)) e.modalidad = 'Seleccione la modalidad.';
   if(has('horas')){ if(!HORAS.includes(String(c.horas))) e.horas = 'Seleccione las horas lectivas.'; else if(c.horas === 'Otro' && !(Number(c.horasOtro) > 0)) e.horas = 'Indique la cantidad de horas.'; }
   if(has('descripcion') && !t(c.descripcion)) e.descripcion = 'Escriba la descripción.';
   if(has('nivel') && !NIVELES.includes(c.nivel)) e.nivel = 'Seleccione el nivel.';
@@ -960,6 +964,8 @@ const fechaTexto = d => d.toLocaleString('es-CR', { dateStyle:'short', timeStyle
 const COL = { incluido:1, fecha:2, escuela:3, asignaDCD:4, codigo:5, nombre:6, moneda:7, horas:8, horasOtro:9, descripcion:10, nivel:11, perfil:12,
   reqInd:13, reqIndDet:14, reqDes:15, reqDesDet:16, software:17, softwareDet:18, equipo:19, equipoDet:20, roles:21, palabras:22, contenidos:23,
   cert:24, certCasa:25, certLink:26, correo:27, programa:28 };
+/* Columnas opcionales: se añaden solas a la hoja si faltan, sin bloquear la herramienta. */
+const EXTRA_OPC = { modalidad:'Modalidad' };
 const EXTRA = { id:'ID de registro', origen:'Origen', registradoPor:'Registrado por', estado:'Estado de revisión', codigoAsignado:'Código asignado', revisadoPor:'Revisado por', fechaRevision:'Fecha de revisión', observacion:'Observaciones', notificado:'Fecha de aviso' };
 const ESCUELAS_DEFECTO = [['Administración de Empresas','#C7AC19','AE'],['Ciberseguridad','#F05323','CIB'],['Fundamentos de Computación','#D2232A','FUN'],['Ingeniería del Software','#C81F66','SOFT'],
   ['Sistemas de Información','#2B93D1','SINF'],['Sistemas Industriales','#7C7B75','SIND'],['Sistemas Inteligentes','#00734A','SINT'],['Tecnologías de Información','#4AA147','TI']];
@@ -986,7 +992,7 @@ function cursoAFila(c, m, ancho, ex){
   });
   set(COL.roles, t(c.roles)); set(COL.palabras, t(c.palabras)); set(COL.contenidos, t(c.contenidos)); set(COL.cert, t(c.cert));
   set(COL.certCasa, c.cert === 'Sí' ? t(c.certCasa) : ''); set(COL.certLink, c.cert === 'Sí' ? t(c.certLink) : '');
-  set(COL.correo, m.correo); set(COL.programa, t(c.programa)); set(ex.id, m.id); set(ex.origen, m.origen || ''); set(ex.registradoPor, m.registradoPor || '');
+  set(COL.correo, m.correo); set(COL.programa, t(c.programa)); set(ex.id, m.id); set(ex.modalidad, MODALIDADES.includes(c.modalidad) ? c.modalidad : ''); set(ex.origen, m.origen || ''); set(ex.registradoPor, m.registradoPor || '');
   ['estado','codigoAsignado','revisadoPor','fechaRevision','observacion','notificado'].forEach(k => set(ex[k], m[k] == null ? '' : String(m[k])));
   return f;
 }
@@ -999,7 +1005,7 @@ function filaACurso(f, ex, n){
   const fv = g(COL.fecha); const fd = typeof fv === 'number' ? deSerial(fv) : new Date(fv || NaN); const fecha = isNaN(fd) ? '' : fd.toISOString();
   return { fila: n, id: t(g(ex.id)), included: g(COL.incluido) === true || /^(true|verdadero|sí|si)$/i.test(t(g(COL.incluido))), fechaRaw: fv, fecha,
     escuela: t(g(COL.escuela)), asignaDCD: t(g(COL.asignaDCD)) || 'Sí', codigo: t(g(COL.codigo)), nombre: t(g(COL.nombre)),
-    moneda: t(g(COL.moneda)).split(/\s*,\s*/).filter(x => MONEDAS.includes(x)), horas, horasOtro, descripcion: t(g(COL.descripcion)), nivel: t(g(COL.nivel)), perfil: t(g(COL.perfil)),
+    moneda: t(g(COL.moneda)).split(/\s*,\s*/).filter(x => MONEDAS.includes(x)), modalidad: t(g(ex.modalidad)), horas, horasOtro, descripcion: t(g(COL.descripcion)), nivel: t(g(COL.nivel)), perfil: t(g(COL.perfil)),
     reqIndOn: ri.on, reqInd: ri.v, reqDesOn: rd.on, reqDes: rd.v, softwareOn: sw.on, software: sw.v, equipoOn: eq.on, equipo: eq.v,
     roles: t(g(COL.roles)), palabras: t(g(COL.palabras)), contenidos: t(g(COL.contenidos)), cert: t(g(COL.cert)) || 'No', certCasa: t(g(COL.certCasa)), certLink: t(g(COL.certLink)),
     correo: t(g(COL.correo)).toLowerCase(), programa: t(g(COL.programa)), origen: t(g(ex.origen)), registradoPor: t(g(ex.registradoPor)),
@@ -1021,6 +1027,20 @@ const Real = {
     const h = (enc[0] || []).map(v => String(v).trim());
     const ex = {}; Object.keys(EXTRA).forEach(k => { const i = h.indexOf(EXTRA[k]); if(i >= 0) ex[k] = i + 1; });
     Real.ex = Object.keys(ex).length === Object.keys(EXTRA).length ? ex : null;
+    if(Real.ex){
+      const hojaR = meta.sheets.find(x => x.properties.title === CFG.HOJA_REGISTROS);
+      let ult = h.length;
+      for(const k of Object.keys(EXTRA_OPC)){
+        let i = h.indexOf(EXTRA_OPC[k]);
+        if(i < 0){
+          try {
+            if(hojaR && hojaR.properties.gridProperties && ult + 1 > hojaR.properties.gridProperties.columnCount) await G.batch([{ appendDimension:{ sheetId: hojaR.properties.sheetId, dimension:'COLUMNS', length:1 } }]);
+            await G.update(`'${CFG.HOJA_REGISTROS}'!${letra(ult + 1)}1`, [[EXTRA_OPC[k]]]); h.push(EXTRA_OPC[k]); i = ult; ult++;
+          } catch(e){ console.warn('No se pudo añadir la columna', EXTRA_OPC[k], e); continue; }
+        }
+        Real.ex[k] = i + 1;
+      }
+    }
     Real.ancho = Math.max(COL.programa, h.length, ...(Real.ex ? Object.values(Real.ex) : [0]));
     const cfg = {}; cfgF.forEach(f => { if(f[0]) cfg[String(f[0]).trim()] = String(f[1] == null ? '' : f[1]).trim(); });
     const schools = (escF.length ? escF : ESCUELAS_DEFECTO.map(e => e.concat('Sí'))).filter(f => f[0] && !/^no$/i.test(String(f[3] || '').trim()))
@@ -1064,7 +1084,7 @@ const Real = {
     const [enc] = await G.batchGet([`'${CFG.HOJA_REGISTROS}'!1:1`]);
     const h = (enc[0] || []).map(v => String(v).trim());
     let ultima = Math.max(h.length, COL.programa);
-    const faltan = Object.values(EXTRA).filter(n => !h.includes(n));
+    const faltan = Object.values(Object.assign({}, EXTRA, EXTRA_OPC)).filter(n => !h.includes(n));
     if(ultima + faltan.length > hojaReg.gridProperties.columnCount)
       await G.batch([{ appendDimension:{ sheetId: hojaReg.sheetId, dimension:'COLUMNS', length: ultima + faltan.length - hojaReg.gridProperties.columnCount } }]);
     if(faltan.length){ await G.update(`'${CFG.HOJA_REGISTROS}'!${letra(ultima + 1)}1:${letra(ultima + faltan.length)}1`, [faltan]); }
@@ -1164,7 +1184,7 @@ const Real = {
 /* ---------- Revisión: estados, Plantilla Maestra y configuración ---------- */
 const MAESTRA_MAPA = { escuela:'escuela', codigo:'codigo', nombre:'nombre del curso', estado:'estado del curso', modif:'ultima modificacion', nombrePC:'nombre en power campus',
   horas:'num. horas clase', reqInd:'requisitos indispensables', reqDes:'requisitos deseables', moneda:'moneda', descLarga:'descripcion larga', nivel:'nivel de complejidad',
-  perfil:'perfil de ingreso', equipo:'requerimientos de equipo', software:'requerimientos de software', roles:'perfil de salida', palabras:'palabras clave', contenidos:'contenidos',
+  modalidad:'modalidad', perfil:'perfil de ingreso', equipo:'requerimientos de equipo', software:'requerimientos de software', roles:'perfil de salida', palabras:'palabras clave', contenidos:'contenidos',
   casa:'casa certificadora', enlaceCert:'enlace a certificacion', video:'video del curso', brochure:'vinculo al brochure', word:'[word] programa', version:'version' };
 const MAESTRA_COPIAR = ['metodologia de aprendizaje', 'modalidad', 'espacio en moodle'];
 function valoresMaestra(c, item, estado){
@@ -1172,7 +1192,7 @@ function valoresMaestra(c, item, estado){
   const det = (k, ninguno) => c[k + 'On'] && t(c[k]) ? t(c[k]) : ninguno;
   return { escuela: c.escuela, codigo: item.codigo, nombre: t(c.nombre), estado, modif: aSerial(new Date()), nombrePC: t(c.nombre).length <= 40 ? t(c.nombre) : '',
     horas: Number(c.horas === 'Otro' ? c.horasOtro : c.horas) || '', reqInd: det('reqInd', 'Sin requisitos'), reqDes: det('reqDes', 'Sin requisitos'), moneda: item.moneda,
-    descLarga: t(c.descripcion), nivel: t(c.nivel), perfil: t(c.perfil), equipo: det('equipo', 'No aplica'), software: det('software', 'No aplica'), roles: t(c.roles),
+    descLarga: t(c.descripcion), nivel: t(c.nivel), modalidad: MODALIDADES.includes(c.modalidad) ? c.modalidad : '', perfil: t(c.perfil), equipo: det('equipo', 'No aplica'), software: det('software', 'No aplica'), roles: t(c.roles),
     palabras: t(c.palabras), contenidos: t(c.contenidos), casa: c.cert === 'Sí' ? t(c.certCasa) : '', enlaceCert: c.cert === 'Sí' ? t(c.certLink) : '',
     video: 'No presenta', brochure: 'No presenta', word: t(c.programa), version: 1 };
 }
@@ -1239,7 +1259,7 @@ Object.assign(Real, {
     const colDe = clave => h.findIndex(x => x.startsWith(clave));
     const cols = {}; Object.keys(MAESTRA_MAPA).forEach(k => { const i = colDe(MAESTRA_MAPA[k]); if(i >= 0) cols[k] = i; });
     if(cols.codigo == null) throw new Error('No se encontró la columna «Código» en la Plantilla Maestra.');
-    const copiar = MAESTRA_COPIAR.map(colDe).filter(i => i >= 0);
+    const copiar = MAESTRA_COPIAR.filter(k => !(k === 'modalidad' && MODALIDADES.includes(r.modalidad))).map(colDe).filter(i => i >= 0);
     for(const item of items.slice().sort((a, b) => (partesCodigo(a.codigo).num - partesCodigo(b.codigo).num))){
       const codigos = await Real.maestraCodigos();
       if(codigos.some(c => { const q = partesCodigo(c), p = partesCodigo(item.codigo); return q && p && q.prefijo === p.prefijo && q.num === p.num; }))
@@ -1819,7 +1839,7 @@ function construirCorreo(cursos, fecha, copia){
     <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a92a3;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colorDe(c.escuela)};margin-right:6px"></span>${i + 1} · ${esc(c.escuela)}</div>
     <div style="font-size:16px;font-weight:700;color:#141b2b;margin:6px 0 8px">${esc(c.nombre)}</div><table style="border-collapse:collapse">
     ${fila('Código', c.asignaDCD === 'No' ? esc(String(c.codigo).toUpperCase()) + ' (propuesto)' : 'Lo asigna Desarrollo Curricular')}${fila('Horas', esc(c.horas === 'Otro' ? c.horasOtro : c.horas))}
-    ${fila('Nivel', esc(c.nivel))}${fila('Moneda', esc((c.moneda || []).join(', ')))}${fila('Certificación', c.cert === 'Sí' ? esc(c.certCasa) : 'No')}
+    ${fila('Nivel', esc(c.nivel))}${fila('Moneda', esc((c.moneda || []).join(', ')))}${fila('Modalidad', esc(c.modalidad || '—'))}${fila('Certificación', c.cert === 'Sí' ? esc(c.certCasa) : 'No')}
     ${fila('Descripción', esc(String(c.descripcion).slice(0, 320)) + (String(c.descripcion).length > 320 ? '…' : ''))}${c.programa ? fila('Programa', `<a href="${esc(c.programa)}" style="color:#006aea">Abrir enlace</a>`) : ''}</table></div>`).join('');
   const html = `<div style="background:#f6f7f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif"><div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e5e8ee;border-radius:12px;overflow:hidden">
     <div style="padding:20px 26px;border-bottom:2px solid ${colorDe(cursos[0].escuela)}"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a92a3">Universidad CENFOTEC · Desarrollo Curricular y Docente</div><div style="font-size:18px;font-weight:700;color:#164a98;margin-top:4px">Asignación de código a microcursos</div></div>
@@ -1918,6 +1938,7 @@ const COLS_X = [
   { key:'codigo', h:'Código propuesto', w:16, nota:'Solo si respondió «No».' },
   { key:'nombre', h:'Nombre del curso', w:36, req:true },
   { key:'moneda', h:'Moneda', w:18, lista:'monedas', req:true },
+  { key:'modalidad', h:'Modalidad', w:16, lista:'modalidades', nota:'Presencial, Virtual en vivo o Híbrida. Vacío = Virtual en vivo.' },
   { key:'horas', h:'Horas lectivas', w:12, req:true, nota:'Número entero: 16, 24, 32 u otra cantidad.' },
   { key:'descripcion', h:'Descripción del curso', w:50, req:true },
   { key:'nivel', h:'Nivel de complejidad', w:16, lista:'niveles', req:true },
@@ -2027,7 +2048,7 @@ async function descargarPlantilla(){
     const wb = new ExcelJS.Workbook(); wb.creator = 'DCD · Universidad CENFOTEC';
     const ws = wb.addWorksheet('Cursos', { views:[{ state:'frozen', ySplit:1 }] });
     const li = wb.addWorksheet('Listas', { state:'veryHidden' });
-    const listas = { escuelas: S.boot.schools.map(s => s.nombre), sino:['Sí','No'], monedas:['Dólares','Colones','Dólares y Colones'], niveles:NIVELES };
+    const listas = { escuelas: S.boot.schools.map(s => s.nombre), sino:['Sí','No'], monedas:['Dólares','Colones','Dólares y Colones'], niveles:NIVELES, modalidades:MODALIDADES };
     const ref = {};
     Object.keys(listas).forEach((k, ci) => { const L = letra(ci + 1); listas[k].forEach((v, r) => li.getCell(`${L}${r + 1}`).value = v); ref[k] = `Listas!$${L}$1:$${L}$${listas[k].length}`; });
     ws.columns = COLS_X.map(c => ({ header: c.h, key: c.key, width: c.w }));
@@ -2089,6 +2110,7 @@ function promptJSON(){
       "codigo_propuesto": "",
       "nombre": "",
       "moneda": ["Dólares"],
+      "modalidad": "Virtual en vivo",
       "horas_lectivas": 24,
       "descripcion": "",
       "nivel": "Básico",
@@ -2111,7 +2133,7 @@ Reglas obligatorias:
 2. "escuela": una de estas, escrita igual: ${S.boot.schools.map(x => x.nombre).join('; ')}.
 3. "asigna_dcd": true si Desarrollo Curricular asigna el código; false solo si ya hay un código, que va en "codigo_propuesto" (ej. ${prefijo(escuela)}-601).
 4. "moneda": lista con "Dólares", "Colones" o ambas.
-5. "horas_lectivas": número entero (16, 24, 32 u otra cantidad).
+5. "horas_lectivas": número entero (16, 24, 32 u otra cantidad). "modalidad": exactamente "Presencial", "Virtual en vivo" o "Híbrida"; si no se indica, usa "Virtual en vivo".
 6. "nivel": exactamente "Básico", "Intermedio" o "Avanzado".
 7. "perfil_ingreso": conocimientos previos que requiere la persona estudiante, en prosa.
 8. Requisitos, software y equipo: texto; deja "" si no aplica (equivale a «Ninguno»). Los requisitos son códigos de cursos separados por coma.
@@ -2128,7 +2150,7 @@ function cursoDesdeJSON(o){
   const asigna = g('asignadcd');
   const f = {
     escuela: t(g('escuela')), asignaDCD: asigna === false || /^(no|false)$/i.test(String(asigna)) ? 'No' : (asigna === '' ? '' : 'Sí'), codigo: t(g('codigopropuesto', 'codigo')),
-    nombre: t(g('nombre', 'nombredelcurso')), moneda: (Array.isArray(g('moneda')) ? g('moneda') : [g('moneda')]).join(' y '), horas: t(g('horaslectivas', 'horas')),
+    nombre: t(g('nombre', 'nombredelcurso')), moneda: (Array.isArray(g('moneda')) ? g('moneda') : [g('moneda')]).join(' y '), horas: t(g('horaslectivas', 'horas')), modalidad: t(g('modalidad')),
     descripcion: t(g('descripcion')), nivel: t(g('nivel', 'niveldecomplejidad')), perfil: t(g('perfilingreso', 'perfildeingreso', 'perfil')),
     reqInd: t(g('requisitosindispensables')), reqDes: t(g('requisitosdeseables')), software: t(g('softwarerequerido', 'software')), equipo: t(g('equipotecnologico', 'equipo')),
     roles: t(g('roles')), palabras: t(g('palabrasclave')), contenidos: Array.isArray(g('contenidos')) ? g('contenidos').join('\n') : t(g('contenidos')),
@@ -2171,6 +2193,7 @@ function cursoDesdeFila(f){
   if(f.escuela){ const m = S.boot.schools.find(s => norm(s.nombre) === norm(f.escuela)); c.escuela = m ? m.nombre : f.escuela; }
   c.codigo = (f.codigo || '').toUpperCase(); c.asignaDCD = sn(f.asignaDCD) || (c.codigo ? 'No' : 'Sí'); c.nombre = f.nombre || '';
   c.moneda = MONEDAS.filter(m => norm(f.moneda).includes(norm(m)));
+  const mo = norm(f.modalidad || ''); c.modalidad = /presen/.test(mo) ? 'Presencial' : /hibri/.test(mo) ? 'Híbrida' : MODALIDAD_DEFECTO;
   const hn = Math.round(Number(String(f.horas || '').replace(/[^\d.,]/g, '').replace(',', '.')));
   if(hn > 0){ if(['16','24','32'].includes(String(hn))) c.horas = String(hn); else { c.horas = 'Otro'; c.horasOtro = String(hn); } }
   ['descripcion','perfil','roles','palabras','contenidos','programa','certCasa','certLink'].forEach(k => c[k] = f[k] || '');
