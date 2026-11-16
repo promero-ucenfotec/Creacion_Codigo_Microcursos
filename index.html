@@ -264,6 +264,7 @@ button.fila:hover,label.fila:hover{background:#fafcff}
 #shell.simple .angosto{max-width:860px;margin:0 auto}
 #shell.simple main:has(.dos-col) .angosto{max-width:1080px}
 #shell.simple main:has(.dos-col){max-width:1140px}
+#shell.simple main:has(.ancho-plan){max-width:1140px}
 .dos-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;align-items:start}
 .dos-col .pm-filtros .buscador input{width:100%}
 .dos-col .buscador{width:100%}
@@ -277,6 +278,7 @@ button.fila:hover,label.fila:hover{background:#fafcff}
 .banner.vercomo .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
 @media(max-width:640px){ .tb-rol{display:none} #shell.simple .tb-esc span{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} }
 .acciones.grandes{grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:16px}
+@media(max-width:1100px){.acciones.grandes{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .accion.grande{flex-direction:column;gap:16px;padding:26px 24px;min-height:200px}
 .accion.grande .ico{width:52px;height:52px;border-radius:14px}
 .accion.grande .ico svg{width:24px;height:24px}
@@ -512,6 +514,73 @@ table.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .interruptor input:checked+span{background:var(--azul2)}
 .interruptor input:checked+span::after{transform:translateX(20px)}
 .temp-prueba{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+
+/* Técnicos y programas */
+.ancho-plan{max-width:1080px;margin:0 auto}
+.plan-cab{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+.plan-cab>div{flex:1}
+.medidor{border:1px solid var(--linea);border-radius:var(--radio);padding:16px 18px 30px;background:linear-gradient(180deg,#fff, #fbfcfe);position:sticky;top:8px;z-index:5;box-shadow:var(--sombra-suave)}
+.med-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.med-est{display:flex;gap:10px;align-items:center;font-size:13.5px;font-weight:600;color:var(--tinta)}
+.medidor.falta .med-est>span:last-child{color:var(--aviso)}
+.medidor.excede .med-est>span:last-child{color:var(--error)}
+.medidor.ok .med-est>span:last-child{color:var(--ok)}
+.med-pill{color:#fff;font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:20px;letter-spacing:.2px;transition:background .4s}
+.med-nums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--tinta-2)}
+.med-nums b{color:var(--tinta);font-size:14px}
+.med-barra{position:relative;height:12px;border-radius:8px;background:#eef1f6;overflow:visible}
+.med-barra .seg{position:absolute;top:0;bottom:0}
+.med-barra .seg.nivel{background:color-mix(in srgb,var(--k) 16%,transparent);border-left:1px solid color-mix(in srgb,var(--k) 45%,transparent);border-right:1px solid color-mix(in srgb,var(--k) 45%,transparent)}
+.med-barra .seg.meta{background:color-mix(in srgb,var(--k) 28%,transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--k) 70%,transparent)}
+.med-barra .seg:first-child{border-radius:8px 0 0 8px}.med-barra .seg:last-of-type{border-radius:0 8px 8px 0}
+.med-barra .relleno{position:absolute;left:0;top:3px;bottom:3px;border-radius:6px;background:linear-gradient(90deg,#c3cad6,var(--c));transition:width .6s cubic-bezier(.4,0,.2,1),background .4s}
+.med-barra .marca{position:absolute;top:-5px;width:4px;height:22px;margin-left:-2px;border-radius:3px;background:var(--c);box-shadow:0 0 0 3px #fff,0 2px 8px rgba(0,0,0,.18);transition:left .6s cubic-bezier(.4,0,.2,1),background .4s}
+.med-etq{position:relative;height:16px;margin-top:8px}
+.med-etq span{position:absolute;transform:translateX(-50%);font-size:10.5px;color:var(--tinta-3);white-space:nowrap;text-align:center;line-height:1.25}
+.med-etq b{display:block;color:var(--tinta-2);font-size:11px}
+.med-nota{margin-top:20px;font-size:12.5px;color:var(--tinta-2);background:var(--suave);border-radius:8px;padding:7px 10px}
+.med-nota+.med-nota{margin-top:6px}
+.med-mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;background:var(--suave);border-radius:10px;padding:10px 14px;margin:-4px 0 18px;color:var(--tinta-2)}
+.med-mini>i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.med-mini b{color:var(--tinta)}
+.periodo{border:1px solid var(--linea);border-radius:var(--radio);padding:12px 14px 6px;margin-top:14px;background:#fff}
+.per-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;margin-bottom:6px}
+.per-n{width:26px;height:26px;border-radius:8px;background:var(--school);color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.curso{display:grid;grid-template-columns:minmax(0,1fr) 120px 112px 190px 34px;gap:12px;align-items:start;padding:10px 0;border-top:1px dashed var(--linea)}
+.curso label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta-3);margin-bottom:5px}
+.curso select{width:100%;padding:8px 9px;font-size:13px}
+.c-nom{padding-top:17px}
+.c-fijo{padding:8px 2px;font-weight:700;font-size:14px}
+.c-h .nota{display:block;margin-top:4px;font-size:11.5px}
+.c-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:6px;font-size:12px;min-height:22px}
+.c-meta select{width:auto;padding:4px 8px;font-size:12.5px;margin-left:6px}
+.c-asig{display:flex!important;align-items:center;text-transform:none!important;letter-spacing:0!important;font-size:12px!important;color:var(--tinta-2)!important;margin:0!important;font-weight:600!important}
+.c-x{margin-top:20px}
+.ori{display:inline-flex;align-items:center;gap:5px;font-weight:700;border-radius:20px;padding:2px 9px;font-size:11.5px}
+.ori .i{width:12px;height:12px}
+.ori.ok{background:var(--ok-soft);color:#1a7a44}.ori.nuevo{background:var(--aviso-soft);color:var(--aviso)}.ori.rev{background:var(--celeste-soft);color:var(--azul)}
+.ac-wrap{position:relative}
+.curso-in{width:100%;font-weight:600}
+.ac-lista{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--linea-2);border-radius:12px;box-shadow:var(--sombra);z-index:30;overflow:hidden;max-height:340px;overflow-y:auto}
+.ac-op{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;background:none;text-align:left;cursor:pointer}
+.ac-op:hover,.ac-op.act{background:var(--celeste-soft)}
+.ac-t{flex:1;min-width:0}.ac-t b{display:block;font-size:13.5px;font-weight:600;color:var(--tinta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ac-t small{color:var(--tinta-3);font-size:11.5px}
+.ac-h{font-size:12px;font-weight:700;color:var(--tinta-2)}
+.ac-pie{font-size:11.5px;color:var(--tinta-3);padding:8px 12px;border-top:1px solid var(--linea);background:var(--suave)}
+.add-par{margin:4px 0 6px}
+.nivel-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;flex:none}
+.pend-caja{background:#fff;border:1px solid var(--linea);border-left:4px solid var(--aviso);border-radius:var(--radio);padding:14px 16px;margin:0 0 26px;box-shadow:var(--sombra-suave)}
+.pend-cab{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}.pend-cab b{display:block;font-size:15px}.pend-cab span{font-size:13px;color:var(--tinta-2)}
+.pend-cab .i{color:var(--aviso);margin-top:2px}
+.pend-caja .lista{box-shadow:none}
+.checks{display:flex;flex-direction:column;gap:8px}
+.check-req,.check-final{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;cursor:pointer;color:var(--tinta)}
+.check-req input,.check-final input{width:17px;height:17px;margin-top:2px;accent-color:var(--azul2);flex:none}
+.check-final{margin:22px 0 4px;padding:14px 16px;border-radius:12px;background:var(--celeste-soft);line-height:1.55}
+.plan-t td.num,.plan-t th.num,.tabla .num{text-align:right}
+.plan-t tr.tot td{font-weight:800;background:var(--suave)}
+.sec-prog{margin-top:34px}
+@media(max-width:900px){.curso{grid-template-columns:1fr 1fr}.c-nom{grid-column:1/-1;padding-top:0}.c-x{margin-top:0}.medidor{position:static}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -1653,18 +1722,24 @@ function irInicio(){
   const u = S.user, r = rolEf(), bor = ls.get(claveBorrador());
   const ops = [['a-uno', 'hoja', 'Registrar un curso', 'Complete el formulario paso a paso. Toma unos 5 minutos.', 'Comenzar'],
     ['a-varios', 'excel', 'Registrar varios cursos', 'Descargue la plantilla de Excel, complétela y súbala aquí.', 'Cargar Excel']];
-  if(r === 'director') ops.push(['a-eq', 'equipo', 'Docentes', 'Dé permiso a los profesores de su escuela para registrar cursos.', 'Gestionar']);
+  if(r === 'director') ops.push(['a-prog', 'carpeta', 'Técnico o programa', 'Arme el plan de estudios y compruebe el nivel del Marco de Cualificaciones.', 'Crear'], ['a-eq', 'equipo', 'Docentes', 'Dé permiso a los profesores de su escuela para registrar cursos.', 'Gestionar']);
   app.innerHTML = `<main class="pantalla"><div class="angosto">
     <div class="saludo">${avatarHTML(u)}<div><div class="sobre-titulo"><i class="punto"></i>${esc(S.school ? S.school.nombre : '')}</div><h1>${saludoHora()}, ${esc(u.given || u.name.split(' ')[0])}</h1></div></div>
     ${bor && bor.curso && bor.curso.nombre ? `<div class="borrador"><span>Tiene un registro sin terminar: <b>${esc(bor.curso.nombre)}</b></span><span class="esp"></span><button class="btn btn-sm btn-texto" id="b-d">Descartar</button><button class="btn btn-sm btn-primario" id="b-c">Continuar</button></div>` : ''}
+    <div id="pend-prog"></div>
     <div class="acciones grandes" style="--n:${ops.length}">${ops.map(o => `<button class="accion grande" id="${o[0]}"><div class="ico">${icon(o[1])}</div><div><b>${o[2]}</b><span>${o[3]}</span></div><span class="ir">${o[4]} ${icon('flecha-der')}</span></button>`).join('')}</div>
     <p style="margin:-20px 0 30px;text-align:right"><button class="btn btn-sm btn-texto" id="a-json" style="font-size:12px;color:var(--tinta-3)">{ } Importar cursos con IA (JSON)</button></p>
     <div class="${r === 'director' ? 'dos-col' : ''}">
       <section><div class="seccion-tit"><h2>${r === 'director' ? 'Solicitudes de la escuela' : 'Mis registros'}</h2><button class="btn btn-sm btn-texto" id="r-mis" title="Actualizar">${icon('recargar')}Actualizar</button></div>
         <div id="mis"><div class="vacio">Cargando…</div></div></section>
       ${r === 'director' ? `<section><div class="seccion-tit"><h2>Plantilla Maestra</h2>${DEMO ? '' : `<a class="btn btn-sm btn-texto" href="https://docs.google.com/spreadsheets/d/${esc(CFG.SHEET_ID_MAESTRA)}/edit" target="_blank" rel="noopener" title="Abrir la Plantilla Maestra">${icon('externo')}Abrir</a>`}</div><div id="pm"><div class="vacio">Cargando…</div></div></section>` : ''}
-    </div></div></main>`;
+    </div>
+    ${r === 'director' ? `<section class="sec-prog"><div class="seccion-tit"><h2>Técnicos y programas</h2><button class="btn btn-sm btn-texto" id="r-prog">${icon('recargar')}Actualizar</button></div><div id="progs"><div class="vacio">Cargando…</div></div></section>` : ''}
+    </div></main>`;
   if(r === 'director') pintarCursosMaestra();
+  if($('#a-prog')) $('#a-prog').addEventListener('click', () => abrirPrograma());
+  if($('#r-prog')) $('#r-prog').addEventListener('click', () => { PROGS = null; pintarProgramasEsc(); pintarPendientesProg(); });
+  pintarPendientesProg(); if(r === 'director') pintarProgramasEsc();
   $('#a-uno').addEventListener('click', () => abrirAsistente());
   $('#a-varios').addEventListener('click', abrirMasivo);
   if($('#a-eq')) $('#a-eq').addEventListener('click', pantallaEquipo);
@@ -1819,13 +1894,13 @@ function verDetalle(r){
    ASISTENTE
    ========================================================================= */
 function abrirAsistente(b){
-  S.wizard = b ? { curso: Object.assign(cursoNuevo(), b.curso), paso: Math.min(b.paso || 0, 3), max: b.max || b.paso || 0, editando: b.editando || null } : { curso: cursoNuevo(S.school && S.school.nombre), paso:0, max:0 };
+  S.wizard = b ? { curso: Object.assign(cursoNuevo(), b.curso), paso: Math.min(b.paso || 0, 3), max: b.max || b.paso || 0, editando: b.editando || null, pendiente: b.pendiente || null } : { curso: cursoNuevo(S.school && S.school.nombre), paso:0, max:0 };
   pintarAsistente();
 }
 let tB = null;
 function guardarBorrador(){
   clearTimeout(tB);
-  tB = setTimeout(() => { if(S.wizard.editando) return; ls.set(claveBorrador(), { curso:S.wizard.curso, paso:S.wizard.paso, max:S.wizard.max }); const g = $('#guardado'); if(g) g.innerHTML = `${icon('check')}Borrador guardado`; }, 500);
+  tB = setTimeout(() => { if(S.wizard.editando) return; ls.set(claveBorrador(), { curso:S.wizard.curso, paso:S.wizard.paso, max:S.wizard.max, pendiente:S.wizard.pendiente || null }); const g = $('#guardado'); if(g) g.innerHTML = `${icon('check')}Borrador guardado`; }, 500);
 }
 function pintarAsistente(){
   activa('uno');
@@ -1833,6 +1908,7 @@ function pintarAsistente(){
   const et = PASOS.map(p => p.titulo).concat('Revisar y enviar');
   app.innerHTML = `<main class="pantalla"><div class="angosto"><button class="volver" id="v">${icon('flecha-izq')}Inicio</button>
     <div class="pasos">${et.map((t, i) => `<button class="st ${i < W.paso ? 'hecho' : ''} ${i === W.paso ? 'activo' : ''}" data-p="${i}" ${i > W.max ? 'disabled' : ''}><span class="bar"></span><span>${esc(t)}</span></button>`).join('')}</div>
+    ${W.pendiente ? `<div class="alerta" style="margin-bottom:14px;background:var(--celeste-soft);color:var(--azul)">${icon('carpeta')}<div>Este curso es parte de <b>${esc(W.pendiente.programa || 'un técnico')}</b>. Al registrarlo, queda enlazado al plan de estudios.</div></div>` : ''}
     <div class="tarjeta form-tarjeta" id="ft"></div></div></main>`;
   $('#v').addEventListener('click', irInicio);
   $$('.st').forEach(b => b.addEventListener('click', () => { if(+b.dataset.p <= W.max) irPaso(+b.dataset.p); }));
@@ -1897,6 +1973,7 @@ async function registrar(cursos, origen, copia){
   const ahora = new Date(); const correo = construirCorreo(cursos, ahora, copia);
   let ec = { ok:true };
   try { await Almacen().enviarCorreo(correo); } catch(e){ ec = { ok:false, correo }; }
+  if(origen === 'Formulario web' && S.wizard && S.wizard.pendiente && recs[0]){ espera('Enlazando con el programa…'); await vincularPendiente(S.wizard.pendiente, recs[0].id); }
   finEspera();
   if(origen === 'Formulario web') ls.del(claveBorrador());
   S.todos = null; S.admin = null;
@@ -2444,7 +2521,7 @@ function pantallaRevision(tab){
     <div id="aviso-maestra"></div>
     <div class="herr"><div class="segmento" id="tabs">
       <button data-t="pend">Pendientes <span id="c-pend"></span></button><button data-t="notif">Por notificar <span id="c-notif"></span></button>
-      <button data-t="hist">Historial</button><button data-t="correos">${icon('correo')}Correos</button></div>
+      <button data-t="prog">Programas <span id="c-prog"></span></button><button data-t="hist">Historial</button><button data-t="correos">${icon('correo')}Correos</button></div>
       <span class="esp"></span><select class="filtro" id="f-esc"><option value="">Todas las escuelas</option>${S.boot.schools.map(s => `<option ${R.escuela === s.nombre ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('')}</select></div>
     <div id="vista"><div class="vacio">Cargando…</div></div></main>`;
   $('#v').addEventListener('click', irInicio);
@@ -2465,10 +2542,12 @@ async function pintarRevision(){
   const notif = todos.filter(r => estadoDe(r) === 'Aprobado' && porEsc(r)).sort((a, b) => a.fechaRevision > b.fechaRevision ? 1 : -1);
   $('#c-pend').textContent = `(${todos.filter(r => ['Pendiente', 'Con observaciones'].includes(estadoDe(r))).length})`;
   $('#c-notif').textContent = `(${todos.filter(r => estadoDe(r) === 'Aprobado').length})`;
+  if(R.tab !== 'prog') cargarProgramas(false).then(ps => { const c = $('#c-prog'); if(c) c.textContent = `(${ps.filter(p => p.estado === 'Enviado').length})`; }).catch(() => {});
   if(R.tab === 'pend') return tablaPendientes(cont, pend);
   if(R.tab === 'ficha') return fichaRevision(cont, pend);
   if(R.tab === 'notif') return colaAvisos(cont, notif);
   if(R.tab === 'correos') return formCorreos(cont);
+  if(R.tab === 'prog') return tablaProgramasRev(cont);
   const hist = todos.filter(r => r.estado && porEsc(r)).sort((a, b) => (b.fechaRevision || b.fecha) > (a.fechaRevision || a.fecha) ? 1 : -1).slice(0, 200);
   cont.innerHTML = hist.length ? `<div class="tabla-wrap"><table class="tabla"><thead><tr><th>Estado</th><th>Código</th><th>Nombre</th><th>Escuela</th><th>Revisado por</th><th>Revisión</th><th>Aviso</th></tr></thead><tbody>${hist.map((r, i) => `<tr data-i="${i}">
     <td>${ETQ[estadoDe(r)]}</td><td class="nw">${esc(r.codigoAsignado || '—')}</td><td class="nom">${esc(r.nombre)}</td><td class="nw"><i class="punto" style="background:${esc(colorDe(r.escuela))};margin-right:7px"></i>${esc(r.escuela)}</td>
@@ -2799,6 +2878,681 @@ function pantallaConfig(){
 /* =========================================================================
    MODO DEMOSTRACIÓN (?demo en la dirección)
    ========================================================================= */
+
+/* =========================================================================
+   TÉCNICOS Y PROGRAMAS PROFESIONALES
+   Hoja «Programas» (en el archivo de registros): una fila por técnico/programa.
+   El plan de estudios se guarda como datos en la columna «Plan (datos)» y en texto legible en «Plan de estudios».
+   ========================================================================= */
+HOJA.programas = 'Programas';
+const TIPOS_PROG = ['Técnico por microciclos', 'Técnico doble titulación', 'Programa profesional'];
+const MESES_PER = Array.from({ length:12 }, (_, i) => 'M' + (i + 1));
+/* Marco Nacional de Cualificaciones (MNC-EFTP-CR): horas totales de cada nivel y requisitos adicionales. */
+const MNC = [
+  { id:'T1', nombre:'Técnico 1', min:400, max:700, color:'#4AA147', ingreso:'II Ciclo de la Educación General Básica aprobado',
+    perfil:'Aplica procedimientos de una actividad laboral específica, con supervisión y poca autonomía. Énfasis en la práctica.',
+    req:['El plan responde a un estándar de cualificación de nivel Técnico 1.', 'El plan será revisado y avalado por la institución designada por la CIIS.'] },
+  { id:'T2', nombre:'Técnico 2', min:1200, max:1600, color:'#2B93D1', ingreso:'II Ciclo de la Educación General Básica aprobado',
+    perfil:'Conoce principios y aplica procedimientos en una gama de actividades laborales, con autonomía sobre sus tareas. Combina haceres con saberes.',
+    req:['El plan responde a un estándar de cualificación de nivel Técnico 2.', 'El plan será revisado y avalado por la institución designada por la CIIS.'] },
+  { id:'T3', nombre:'Técnico 3', min:2300, max:2800, color:'#164a98', ingreso:'III Ciclo de la Educación General Básica aprobado',
+    perfil:'Comprende principios y fundamentos en una amplia gama de actividades; puede supervisar el trabajo de otros y plantear soluciones viables.',
+    req:['El plan responde a un estándar de cualificación de nivel Técnico 3.', 'Incluye una práctica profesional evaluada de al menos 320 horas.', 'La persona estudiante aprueba la prueba escrita estandarizada de la carrera técnica.'] },
+  { id:'T4', nombre:'Técnico 4', min:2840, max:2840, color:'#6b3fa0', ingreso:'III Ciclo de la Educación General Básica aprobado y Educación Diversificada para titularse',
+    perfil:'Mismas competencias técnicas del nivel 3, con enfoque en emprendimiento; requiere la Educación Diversificada para la titulación.',
+    req:['El plan dura 2840 horas, según el Consejo Superior de Educación para el Técnico Medio.', 'Incluye práctica profesional y prueba nacional escrita estandarizada.', 'Exige el diploma de Educación Diversificada para la titulación.'] },
+  { id:'T5', nombre:'Técnico 5', min:2700, max:4500, color:'#C81F66', ingreso:'Bachillerato en Educación Media (MEP)',
+    perfil:'Comprende principios y fundamentos y los aplica en procesos técnicos de diversos contextos; participa en abordajes multidisciplinarios.',
+    req:['Corresponde a un pregrado de 60 a 100 créditos.', 'El plan responde al estándar de cualificación pertinente de nivel Técnico 5.'] }
+];
+const MNC_SIN = { id:'NA', nombre:'Sin nivel del Marco', color:'#7c8799' };
+const nivelMNC = id => MNC.find(n => n.id === id) || null;
+/* Créditos por horas lectivas: misma regla que la Plantilla Maestra (16 h = 1 crédito; cada 8 h, medio crédito más). */
+const creditosDe = h => { h = Number(h) || 0; return h < 16 ? 0.5 : 0.5 + Math.floor((h - 8) / 8) * 0.5; };
+const totalHorasDe = h => Math.ceil(creditosDe(h) * 45);
+const fmtN = n => Number(n).toLocaleString('es-CR', { maximumFractionDigits:1 });
+const uidP = () => 'c' + Math.random().toString(36).slice(2, 9);
+const ESTADOS_PROG = { 'En construcción':'<span class="etiqueta pend">En construcción</span>', Enviado:'<span class="etiqueta rol">En revisión DCD</span>',
+  'Con observaciones':'<span class="etiqueta error">Con observaciones</span>', Aprobado:'<span class="etiqueta ok">Aprobado</span>' };
+const PROG_COLS = [['id','ID'],['fecha','Fecha'],['actualizado','Última actualización'],['escuela','Escuela'],['tipo','Tipo'],['codigo','Código propuesto'],['nombre','Nombre'],
+  ['tematicas','Temáticas'],['creacion','Fecha de creación (año / periodo)'],['publico','Público meta'],['modalidad','Modalidad'],['moneda','Moneda'],
+  ['nivel','Nivel del Marco'],['cursos','Cursos'],['periodos','Periodos'],['meses','Duración (meses)'],['creditos','Créditos'],['horasClase','Horas lectivas'],['horasTotales','Horas totales'],
+  ['plan','Plan de estudios'],['descripcion','Descripción'],['mensaje','Mensaje comercial'],['palabras','Palabras clave'],['ingresoReq','Requisitos de ingreso'],
+  ['perfilIngreso','Perfil de ingreso'],['perfilSalida','Perfil de salida'],['ocupacional','Perfil ocupacional'],['estado','Estado'],['registradoPor','Registrado por'],
+  ['correo','Correo'],['revisadoPor','Revisado por'],['fechaRevision','Fecha de revisión'],['codigoAsignado','Código asignado'],['observacion','Observaciones'],['datos','Plan (datos)']];
+function progNuevo(){
+  const d = new Date();
+  return { id:'', escuela: S.school ? S.school.nombre : '', tipo:'Técnico por microciclos', nivel:'T1', asignaDCD:'Sí', codigo:'', nombre:'', tematicas:'',
+    anio:String(d.getFullYear()), mes:'M' + (d.getMonth() + 1), publico:'Todo público', modalidad:MODALIDAD_DEFECTO, moneda:['Dólares'],
+    descripcion:'', mensaje:'', palabras:'', ingresoReq:'', perfilIngreso:'', perfilSalida:'', ocupacional:'', confirmados:[], plan:[], estado:'En construcción' };
+}
+function progAFila(p){
+  const st = statsPlan(p), datos = { v:1, tipo:p.tipo, nivel:p.nivel, asignaDCD:p.asignaDCD, anio:p.anio, mes:p.mes, confirmados:p.confirmados || [], plan:p.plan };
+  const val = { id:p.id, fecha:p.fecha || fechaTexto(new Date()), actualizado:fechaTexto(new Date()), escuela:p.escuela, tipo:p.tipo, codigo:p.asignaDCD === 'No' ? String(p.codigo || '').toUpperCase() : 'SEGUIR CONSECUTIVO',
+    nombre:p.nombre, tematicas:p.tematicas, creacion:`${p.anio} / ${p.mes}`, publico:p.publico, modalidad:p.modalidad, moneda:(p.moneda || []).join(', '),
+    nivel:(nivelMNC(p.nivel) || MNC_SIN).nombre, cursos:st.cursos, periodos:st.periodos, meses:st.meses, creditos:st.creditos, horasClase:st.horasClase, horasTotales:st.horasTotales,
+    plan:planTexto(p), descripcion:p.descripcion, mensaje:p.mensaje, palabras:p.palabras, ingresoReq:p.ingresoReq, perfilIngreso:p.perfilIngreso, perfilSalida:p.perfilSalida, ocupacional:p.ocupacional,
+    estado:p.estado, registradoPor:p.registradoPor || S.user.name, correo:p.correo || S.user.email, revisadoPor:p.revisadoPor || '', fechaRevision:p.fechaRevision || '',
+    codigoAsignado:p.codigoAsignado || '', observacion:p.observacion || '', datos:JSON.stringify(datos) };
+  return PROG_COLS.map(([k]) => val[k] == null ? '' : val[k]);
+}
+function filaAProg(f, fila){
+  const g = k => { const i = PROG_COLS.findIndex(c => c[0] === k); const v = f[i]; return v == null ? '' : String(v); };
+  let d = {}; try { d = JSON.parse(g('datos') || '{}'); } catch(e){}
+  const cod = g('codigo');
+  return Object.assign(progNuevo(), { fila, id:g('id'), fecha:g('fecha'), actualizado:g('actualizado'), escuela:g('escuela'), tipo:d.tipo || g('tipo'), nivel:d.nivel || 'T1',
+    asignaDCD:d.asignaDCD || (/consecutivo/i.test(cod) ? 'Sí' : 'No'), codigo:/consecutivo/i.test(cod) ? '' : cod, nombre:g('nombre'), tematicas:g('tematicas'),
+    anio:d.anio || g('creacion').split('/')[0].trim(), mes:d.mes || (g('creacion').split('/')[1] || '').trim(), publico:g('publico'), modalidad:g('modalidad') || MODALIDAD_DEFECTO,
+    moneda:g('moneda').split(/\s*,\s*/).filter(x => MONEDAS.includes(x)), descripcion:g('descripcion'), mensaje:g('mensaje'), palabras:g('palabras'), ingresoReq:g('ingresoReq'),
+    perfilIngreso:g('perfilIngreso'), perfilSalida:g('perfilSalida'), ocupacional:g('ocupacional'), estado:g('estado') || 'En construcción', registradoPor:g('registradoPor'),
+    correo:g('correo').toLowerCase(), revisadoPor:g('revisadoPor'), fechaRevision:g('fechaRevision'), codigoAsignado:g('codigoAsignado'), observacion:g('observacion'),
+    confirmados:d.confirmados || [], plan:Array.isArray(d.plan) ? d.plan : [] });
+}
+
+/* ---------- Cálculos del plan ---------- */
+function resolverItem(it){
+  const reg = it.registroId && S.todos ? S.todos.find(r => r.id === it.registroId) : null;
+  const pm = !it.nuevo && it.codigo && PM_CACHE ? PM_CACHE.find(c => c.codigo.toUpperCase() === it.codigo.toUpperCase()) : null;
+  let horas = Number(it.horas) || 0;
+  if(pm && Number(pm.horas)) horas = Number(pm.horas);
+  if(reg){ const h = reg.horas === 'Otro' ? reg.horasOtro : reg.horas; if(Number(h)) horas = Number(h); }
+  const codigo = reg && reg.codigoAsignado ? reg.codigoAsignado.split(/\s*,\s*/)[0] : (it.nuevo ? '' : it.codigo);
+  let estado = 'maestra';
+  if(it.nuevo) estado = !it.registroId ? 'pendiente' : !reg ? 'registrado' : ['Aprobado', 'Notificado', 'Aviso en borrador', 'Incluido'].includes(estadoDe(reg)) ? 'aprobado' : estadoDe(reg) === 'Con observaciones' ? 'observado' : 'revision';
+  return { horas, creditos:creditosDe(horas), total:totalHorasDe(horas), codigo, reg, pm, estado };
+}
+function statsPlan(p){
+  const items = (p.plan || []).filter(it => String(it.nombre || it.codigo || '').trim());
+  let creditos = 0, horasClase = 0, horasTotales = 0, periodos = 0, pendientes = 0, revision = 0;
+  items.forEach(it => { const r = resolverItem(it); creditos += r.creditos; horasClase += r.horas; horasTotales += r.total; periodos = Math.max(periodos, (+it.periodo || 1) + (+it.dura || 1) - 1);
+    if(r.estado === 'pendiente') pendientes++; if(['registrado', 'revision', 'observado'].includes(r.estado)) revision++; });
+  return { cursos:items.length, creditos, horasClase, horasTotales, periodos, semanas:periodos * 5, meses:Math.ceil(periodos * 5 / 4), pendientes, revision };
+}
+const ESCALA = [[0, 400], [400, 700, 'T1'], [700, 1200], [1200, 1600, 'T2'], [1600, 2300], [2300, 2800, 'T3'], [2800, 4500, 'T4 · T5']];
+function posEscala(h){
+  const n = ESCALA.length;
+  for(let i = 0; i < n; i++){ const [a, b] = ESCALA[i]; if(h <= b || i === n - 1) return Math.min(100, (i + Math.min(1, Math.max(0, (h - a) / (b - a)))) / n * 100); }
+  return 100;
+}
+function evaluarNivel(p, st){
+  const h = st.horasTotales, obj = nivelMNC(p.nivel);
+  const alcanzados = MNC.filter(n => h >= n.min && h <= (n.id === 'T4' ? n.max : n.max));
+  const actual = alcanzados[0] || null;
+  let estado = 'sin', msj = '';
+  if(!obj){ msj = h ? `${fmtN(h)} horas totales · los programas profesionales no requieren un nivel del Marco.` : 'Agregue cursos para calcular las horas.'; estado = 'na'; }
+  else if(!h) msj = `Agregue cursos: ${obj.nombre} pide ${obj.min === obj.max ? fmtN(obj.min) : fmtN(obj.min) + ' a ' + fmtN(obj.max)} horas totales.`;
+  else if(h < obj.min){ estado = 'falta'; msj = `Faltan ${fmtN(obj.min - h)} h para llegar a ${obj.nombre}.`; }
+  else if(h > obj.max){ estado = 'excede'; msj = `Supera en ${fmtN(h - obj.max)} h el máximo de ${obj.nombre}.`; }
+  else { estado = 'ok'; msj = `Cumple el rango de horas de ${obj.nombre}.`; }
+  return { obj, actual, estado, msj, color:(actual || {}).color || '#aab4c3' };
+}
+function htmlMedidor(p){
+  const st = statsPlan(p), ev = evaluarNivel(p, st), pos = posEscala(st.horasTotales), obj = ev.obj;
+  const n = ESCALA.length;
+  return `<div class="medidor ${ev.estado}" style="--c:${ev.color}">
+    <div class="med-top"><div class="med-est"><span class="med-pill" style="background:${(obj || MNC_SIN).color}">${esc((obj || MNC_SIN).nombre)}</span><span>${esc(ev.msj)}</span></div>
+      <div class="med-nums"><span><b>${st.cursos}</b> cursos</span><span><b>${fmtN(st.creditos)}</b> créditos</span><span><b>${fmtN(st.horasTotales)}</b> h totales</span><span><b>${st.periodos}</b> periodos · <b>${st.meses}</b> meses</span></div></div>
+    <div class="med-barra">${ESCALA.map((s, i) => `<i class="seg ${s[2] ? 'nivel' : ''} ${obj && s[2] && s[2].includes(obj.id) ? 'meta' : ''}" style="left:${i / n * 100}%;width:${100 / n}%;${s[2] ? `--k:${(MNC.find(m => s[2].startsWith(m.id)) || {}).color}` : ''}"></i>`).join('')}
+      <i class="relleno" style="width:${pos}%"></i><i class="marca" style="left:${pos}%"></i></div>
+    <div class="med-etq">${ESCALA.map((s, i) => s[2] ? `<span style="left:${(i + .5) / n * 100}%"><b>${s[2].replace(/T(\d)/g, 'Técnico $1').replace('Técnico 4 · Técnico 5', 'T4 · T5')}</b>${fmtN(s[0])}–${fmtN(s[1])} h</span>` : '').join('')}</div>
+    ${ev.actual && obj && ev.actual.id !== obj.id ? `<div class="med-nota">Con estas horas el plan corresponde a <b>${esc(ev.actual.nombre)}</b>. Puede cambiar el nivel en «Datos generales».</div>` : ''}
+    ${st.pendientes ? `<div class="med-nota">${st.pendientes} curso(s) nuevo(s) todavía sin registrar. Sus horas ya se cuentan.</div>` : ''}</div>`;
+}
+function planTexto(p){
+  const items = (p.plan || []).filter(it => String(it.nombre || '').trim()).slice().sort((a, b) => a.periodo - b.periodo);
+  return items.map(it => { const r = resolverItem(it); const req = it.req ? items.find(x => x.uid === it.req) : null;
+    return `P${it.periodo}${+it.dura > 1 ? '-' + (+it.periodo + +it.dura - 1) : ''}: ${r.codigo || 'NUEVO'} ${it.nombre} (${r.horas} h · ${fmtN(r.creditos)} cr)${req ? ' · req. ' + (resolverItem(req).codigo || req.nombre) : ''}`; }).join('\n');
+}
+
+/* ---------- Almacén ---------- */
+Object.assign(Real, {
+  async asegurarProgramas(){
+    if(Real.progOk) return;
+    let hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.programas);
+    if(!hoja){
+      await G.batch([{ addSheet:{ properties:{ title:HOJA.programas, gridProperties:{ frozenRowCount:1, columnCount:PROG_COLS.length } } } }]);
+      Real.meta = await G.meta(); hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.programas);
+      await G.update(`'${HOJA.programas}'!A1:${letra(PROG_COLS.length)}1`, [PROG_COLS.map(c => c[1])]);
+      await G.batch([{ repeatCell:{ range:{ sheetId:hoja.properties.sheetId, startRowIndex:0, endRowIndex:1 }, cell:{ userEnteredFormat:{ backgroundColor:{ red:.086, green:.29, blue:.596 }, textFormat:{ bold:true, foregroundColor:{ red:1, green:1, blue:1 } } } }, fields:'userEnteredFormat(backgroundColor,textFormat)' } }]);
+    }
+    Real.progOk = hoja.properties.sheetId;
+  },
+  async programas(){
+    await Real.asegurarProgramas();
+    const [filas] = await G.batchGet([`'${HOJA.programas}'!A2:${letra(PROG_COLS.length)}`]);
+    return filas.map((f, i) => filaAProg(f, i + 2)).filter(p => p.id);
+  },
+  async guardarPrograma(p){
+    await Real.asegurarProgramas();
+    if(!p.id){ p.id = 'P-' + nuevoId().slice(2); p.fecha = fechaTexto(new Date()); p.correo = S.user.email; p.registradoPor = S.user.name; }
+    const fila = progAFila(p);
+    const [ids] = await G.batchGet([`'${HOJA.programas}'!A2:A`]);
+    const i = ids.findIndex(f => String(f[0] || '') === p.id);
+    if(i >= 0) await G.update(`'${HOJA.programas}'!A${i + 2}:${letra(PROG_COLS.length)}${i + 2}`, [fila]);
+    else await G.batch([
+      { insertDimension:{ range:{ sheetId:Real.progOk, dimension:'ROWS', startIndex:1, endIndex:2 }, inheritFromBefore:false } },
+      { updateCells:{ start:{ sheetId:Real.progOk, rowIndex:1, columnIndex:0 }, rows:[{ values:fila.map(v => typeof v === 'number' ? { userEnteredValue:{ numberValue:v } } : v === '' ? {} : { userEnteredValue:{ stringValue:String(v) } }) }], fields:'userEnteredValue' } }]);
+    return p;
+  },
+  async maestraProgramas(){
+    try {
+      const j = await G.req(`${G.baseM()}/values:batchGet?ranges=${encodeURIComponent(`'2.Programas'!A2:E`)}&valueRenderOption=FORMATTED_VALUE`);
+      return ((j.valueRanges[0] || {}).values || []).filter(f => f[1] && f[3]).map(f => ({ escuela:String(f[0] || ''), codigo:String(f[1]).trim().toUpperCase(), nombre:String(f[3]).trim(), tipo:String(f[4] || '') }));
+    } catch(e){ return []; }
+  }
+});
+let PROGS = null, PROGS_PM = null;
+async function cargarProgramas(forzar){ if(forzar || !PROGS) PROGS = await Almacen().programas(); return PROGS; }
+async function asegurarCatalogos(){
+  const t = [];
+  if(!PM_CACHE) t.push(Almacen().maestraCursos().then(x => PM_CACHE = x).catch(() => { PM_CACHE = PM_CACHE || []; }));
+  if(!S.todos) t.push(cargarTodos(false).catch(() => {}));
+  if(!PROGS_PM) t.push(Almacen().maestraProgramas().then(x => PROGS_PM = x).catch(() => { PROGS_PM = []; }));
+  await Promise.all(t);
+}
+async function guardarProg(p, silencio){
+  const avisar = (p.plan || []).filter(it => it.nuevo && !it.registroId && it.asignado && it.asignado !== S.user.email && it.avisado !== it.asignado);
+  if(!silencio) espera('Guardando…');
+  try { await Almacen().guardarPrograma(p); }
+  catch(e){ finEspera(); toast(e.message, 'error', 6000); return false; }
+  PROGS = null;
+  if(avisar.length){
+    const porPersona = {}; avisar.forEach(it => (porPersona[it.asignado] = porPersona[it.asignado] || []).push(it));
+    for(const correo of Object.keys(porPersona)){
+      try { await Almacen().enviarCorreo(correoAsignacion(p, correo, porPersona[correo])); porPersona[correo].forEach(it => it.avisado = it.asignado); }
+      catch(e){ console.warn('No se pudo avisar a', correo, e); }
+    }
+    try { await Almacen().guardarPrograma(p); } catch(e){}
+    toast(`Se avisó por correo a ${Object.keys(porPersona).length} persona(s) con cursos por completar.`, '', 5000);
+  }
+  if(!silencio) finEspera();
+  ls.del(claveProg());
+  return true;
+}
+function correoAsignacion(p, correo, items){
+  const m = S.boot.equipo.find(x => x.correo === correo); const nom = m && m.nombre ? m.nombre.split(' ')[0] : '';
+  const url = location.href.split('?')[0].split('#')[0];
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#141b2b"><div style="border-bottom:2px solid ${colorDe(p.escuela)};padding:0 0 12px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a92a3">Universidad CENFOTEC · Desarrollo Curricular y Docente</div><div style="font-size:18px;font-weight:700;color:#164a98;margin-top:4px">Cursos por completar</div></div>
+    <p style="font-size:14px;line-height:1.6">Hola${nom ? ' ' + esc(nom) : ''}:</p><p style="font-size:14px;line-height:1.6">${esc(S.user.name)} le asignó ${items.length === 1 ? 'un curso nuevo' : items.length + ' cursos nuevos'} del ${esc(p.tipo.toLowerCase())} <b>«${esc(p.nombre)}»</b> (${esc(p.escuela)}). Ya vienen con el nombre y las horas; solo falta completar el resto del registro.</p>
+    <ul style="font-size:14px;line-height:1.7">${items.map(it => `<li><b>${esc(it.nombre)}</b> · ${esc(it.horas)} horas lectivas · periodo ${esc(it.periodo)}</li>`).join('')}</ul>
+    <p style="margin:22px 0"><a href="${esc(url)}" style="background:#006aea;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:14px">Abrir la herramienta</a></p>
+    <p style="font-size:12px;color:#8a92a3">Los encontrará en su inicio, en «Cursos por completar».</p></div>`;
+  return { to:[correo], cc:[], subject:`Cursos por completar · ${p.nombre}`, html };
+}
+const claveProg = () => 'dcd_prog_borrador_' + (S.user ? S.user.email : '');
+
+/* ---------- Pantallas de inicio: pendientes y lista de programas ---------- */
+function misPendientes(progs){
+  const out = [];
+  progs.forEach(p => (p.plan || []).forEach(it => { if(it.nuevo && !it.registroId && String(it.nombre || '').trim() && (it.asignado || p.correo) === S.user.email) out.push({ p, it }); }));
+  return out;
+}
+async function pintarPendientesProg(){
+  const cont = $('#pend-prog'); if(!cont) return;
+  let progs; try { progs = await cargarProgramas(false); } catch(e){ return; }
+  if(!$('#pend-prog')) return;
+  const todos = misPendientes(progs.filter(p => p.estado !== 'Aprobado'));
+  const aqui = todos.filter(x => !S.school || x.p.escuela === S.school.nombre), otras = [...new Set(todos.filter(x => !aqui.includes(x)).map(x => x.p.escuela))];
+  if(!todos.length){ cont.innerHTML = ''; return; }
+  cont.innerHTML = `<div class="pend-caja"><div class="pend-cab">${icon('lista')}<div><b>Cursos por completar</b><span>${aqui.length ? `Son parte de un técnico o programa. Ya traen el nombre y las horas.` : ''}${otras.length ? ` Tiene otros en ${otras.map(esc).join(', ')}: cambie de escuela arriba para verlos.` : ''}</span></div></div>
+    ${aqui.length ? `<div class="lista">${aqui.map((x, i) => `<div class="fila"><div class="txt"><b>${esc(x.it.nombre)}</b><span class="sec">${esc(x.p.nombre)} · periodo ${esc(x.it.periodo)} · ${esc(x.it.horas)} h lectivas</span></div><button class="btn btn-sm btn-primario" data-pc="${i}">Completar ${icon('flecha-der')}</button></div>`).join('')}</div>` : ''}</div>`;
+  $$('[data-pc]', cont).forEach(b => b.addEventListener('click', () => completarPendiente(aqui[+b.dataset.pc].p, aqui[+b.dataset.pc].it)));
+}
+function completarPendiente(p, it){
+  const c = cursoNuevo(p.escuela);
+  const h = String(Number(it.horas) || '');
+  Object.assign(c, { nombre:it.nombre, modalidad:p.modalidad || MODALIDAD_DEFECTO, moneda:(p.moneda || []).slice(), horas:['16','24','32'].includes(h) ? h : (h ? 'Otro' : ''), horasOtro:['16','24','32'].includes(h) ? '' : h });
+  abrirAsistente({ curso:c, paso:0, max:0, pendiente:{ progId:p.id, uid:it.uid, programa:p.nombre } });
+}
+async function vincularPendiente(pend, regId){
+  try {
+    const progs = await cargarProgramas(true); const p = progs.find(x => x.id === pend.progId); if(!p) return;
+    const it = p.plan.find(x => x.uid === pend.uid); if(!it) return;
+    it.registroId = regId; await Almacen().guardarPrograma(p); PROGS = null;
+  } catch(e){ toast('El curso quedó registrado, pero no se pudo enlazar con el programa: ' + e.message, 'error', 7000); }
+}
+async function pintarProgramasEsc(){
+  const cont = $('#progs'); if(!cont) return;
+  let progs; try { progs = await cargarProgramas(false); } catch(e){ cont.innerHTML = `<div class="vacio">${esc(e.message)}</div>`; return; }
+  if(!$('#progs')) return;
+  const gest = escuelasQueGestiono();
+  const lista = progs.filter(p => gest.includes(p.escuela) || p.correo === S.user.email);
+  const bor = ls.get(claveProg());
+  if(!lista.length && !bor){ cont.innerHTML = `<div class="vacio">Todavía no hay técnicos ni programas creados con esta herramienta.</div>`; return; }
+  cont.innerHTML = `${bor && bor.p && bor.p.nombre && !bor.p.id ? `<div class="borrador" style="margin-bottom:12px"><span>Tiene un técnico sin guardar: <b>${esc(bor.p.nombre)}</b></span><span class="esp"></span><button class="btn btn-sm btn-texto" id="pb-d">Descartar</button><button class="btn btn-sm btn-primario" id="pb-c">Continuar</button></div>` : ''}
+    <div class="lista">${lista.map((p, i) => { const st = statsPlan(p), nv = nivelMNC(p.nivel) || MNC_SIN;
+      return `<button class="fila" data-pi="${i}"><i class="nivel-dot" style="background:${nv.color}"></i><div class="txt"><b>${esc(p.nombre || 'Sin nombre')}</b><span class="sec">${esc(p.tipo)} · ${esc(nv.nombre)} · ${st.cursos} cursos · ${fmtN(st.horasTotales)} h${st.pendientes ? ` · <b style="color:var(--aviso)">${st.pendientes} por completar</b>` : ''}</span></div>${ESTADOS_PROG[p.estado] || ''}</button>`; }).join('')}</div>`;
+  $$('[data-pi]', cont).forEach(b => b.addEventListener('click', () => { const p = lista[+b.dataset.pi]; ['En construcción', 'Con observaciones'].includes(p.estado) ? abrirPrograma(p) : verPrograma(p); }));
+  if($('#pb-c')) $('#pb-c').addEventListener('click', () => abrirPrograma(bor.p, bor.paso));
+  if($('#pb-d')) $('#pb-d').addEventListener('click', () => { ls.del(claveProg()); pintarProgramasEsc(); });
+}
+
+/* ---------- Asistente del programa ---------- */
+const PASOS_PROG = ['Datos generales', 'Plan de estudios', 'Descripción y perfiles', 'Marco y envío'];
+const PROG_CAMPOS = {
+  escuela:{ label:'Escuela', tipo:'escuela', req:true },
+  tipo:{ label:'Tipo', tipo:'chips', req:true, opciones:TIPOS_PROG },
+  nivel:{ label:'Nivel del Marco de Cualificaciones que busca', tipo:'seg', req:true, ayuda:'Las horas totales del plan se comparan con este nivel. Puede cambiarlo después.',
+    opciones:MNC.map(n => [n.id, n.nombre, n.min === n.max ? `${fmtN(n.min)} h` : `${fmtN(n.min)}–${fmtN(n.max)} h`]).concat([['NA', 'Sin nivel', 'Programa profesional']]) },
+  asignaDCD:{ label:'Código del programa', tipo:'seg', req:true, opciones:[['Sí', 'Desarrollo Curricular', 'Sigue el consecutivo'], ['No', 'Ya tengo un código', 'Según la nomenclatura']],
+    sub:[{ cuando:'No', key:'codigo', tipo:'text', label:'Código (máximo 6 caracteres)', ph:'Ej. SSCTEC', mayus:true }] },
+  nombre:{ label:'Nombre del técnico o programa', tipo:'text', req:true, ph:'Ej. Técnico en Auxiliar Contable Digital', ayuda:'Sin la palabra «Especialidad» y sin el código.' },
+  tematicas:{ label:'Temáticas', tipo:'textarea', filas:2, req:true, ph:'Ej. Virtualización, Redes, Sistemas operativos', ayuda:'Conocimientos que se obtienen en el programa.' },
+  anio:{ label:'Año de creación', tipo:'chips', req:true, opciones:[String(new Date().getFullYear()), String(new Date().getFullYear() + 1)] },
+  mes:{ label:'Periodo mensual', tipo:'chips', req:true, opciones:MESES_PER },
+  publico:{ label:'Público meta', tipo:'chips', req:true, opciones:['Todo público', 'Empléate'] },
+  modalidad:{ label:'Modalidad', tipo:'chips', req:true, opciones:MODALIDADES },
+  moneda:{ label:'Moneda', tipo:'multi', req:true, opciones:MONEDAS, ayuda:'Puede seleccionar ambas.' },
+  descripcion:{ label:'Descripción del técnico', tipo:'textarea', filas:5, req:true, ayuda:'Competencias que desarrolla y la necesidad del mercado que atiende.', ph:'El Técnico en … que ofrece la Universidad CENFOTEC está diseñado para …' },
+  mensaje:{ label:'Mensaje comercial', tipo:'textarea', filas:4, req:true, ayuda:'Tres razones por las que este programa es importante.' },
+  palabras:{ label:'Palabras clave', tipo:'textarea', filas:2, req:true, ayuda:'Separadas por coma; pensadas para búsquedas en la web.' },
+  ingresoReq:{ label:'Requisitos de ingreso', tipo:'textarea', filas:2, req:true, ayuda:'Requisitos mínimos para matricular. Se propone el que pide el nivel del Marco.' },
+  perfilIngreso:{ label:'Perfil de ingreso', tipo:'textarea', filas:3, req:true, ayuda:'En prosa: a quién va dirigido y qué conocimientos previos necesita.' },
+  perfilSalida:{ label:'Perfil de salida', tipo:'textarea', filas:4, req:true, ayuda:'En prosa: de qué es capaz la persona al terminar.' },
+  ocupacional:{ label:'Perfil ocupacional', tipo:'textarea', filas:3, req:true, ayuda:'Roles o puestos que puede ocupar, separados por coma.', ph:'Ej. Desarrollador web, Analista de datos junior' }
+};
+const PROG_PASO_CAMPOS = [['escuela','tipo','nivel','nombre','asignaDCD','tematicas','anio','mes','publico','modalidad','moneda'], null, ['descripcion','mensaje','palabras','ingresoReq','perfilIngreso','perfilSalida','ocupacional']];
+function validarProg(p, keys){
+  const e = {}, t = v => String(v == null ? '' : v).trim();
+  keys.forEach(k => {
+    const d = PROG_CAMPOS[k]; if(!d) return;
+    if(k === 'moneda'){ if(!(p.moneda || []).length) e.moneda = 'Seleccione al menos una moneda.'; return; }
+    if(k === 'asignaDCD'){ if(p.asignaDCD === 'No'){ const c = t(p.codigo); if(!c) e.asignaDCD = 'Escriba el código.'; else if(c.length > 6) e.asignaDCD = 'El código admite máximo 6 caracteres.'; else if((PROGS_PM || []).some(x => x.codigo === c.toUpperCase())) e.asignaDCD = `El código ${c.toUpperCase()} ya existe en la Plantilla Maestra.`; } return; }
+    if(k === 'nombre' && /especialidad/i.test(p.nombre)) { e.nombre = 'No use la palabra «Especialidad» en el nombre.'; return; }
+    if(d.req && !t(p[k])) e[k] = 'Complete este campo.';
+  });
+  return e;
+}
+function abrirPrograma(p, paso){
+  const prog = p ? JSON.parse(JSON.stringify(p)) : progNuevo();
+  if(!prog.ingresoReq && nivelMNC(prog.nivel)) prog.ingresoReq = '1. ' + nivelMNC(prog.nivel).ingreso;
+  S.prog = { p:prog, paso:paso || 0, max:p && p.id ? 3 : (paso || 0) };
+  pintarPrograma();
+  asegurarCatalogos().then(() => { if(S.prog && S.prog.p === prog && $('#ft-prog') && S.prog.paso === 1) pintarPrograma(); });
+}
+let tBP = null;
+function borradorProg(){ clearTimeout(tBP); tBP = setTimeout(() => { if(S.prog) ls.set(claveProg(), { p:S.prog.p, paso:S.prog.paso }); }, 600); }
+function pintarPrograma(){
+  activa('prog');
+  const P = S.prog, p = P.p; window.scrollTo(0, 0);
+  app.innerHTML = `<main class="pantalla"><div class="${P.paso === 1 ? 'ancho-plan' : 'angosto'}"><button class="volver" id="v">${icon('flecha-izq')}Inicio</button>
+    <div class="sobre-titulo" style="margin-bottom:8px"><i class="punto"></i>${p.id ? 'Técnico o programa · ' + esc(p.id) : 'Nuevo técnico o programa'}</div>
+    <div class="pasos">${PASOS_PROG.map((t, i) => `<button class="st ${i < P.paso ? 'hecho' : ''} ${i === P.paso ? 'activo' : ''}" data-p="${i}" ${i > P.max ? 'disabled' : ''}><span class="bar"></span><span>${esc(t)}</span></button>`).join('')}</div>
+    ${p.estado === 'Con observaciones' && p.observacion ? `<div class="alerta aviso" style="margin-bottom:16px">${icon('alerta')}<div><b>Observaciones de Desarrollo Curricular</b><br>${esc(p.observacion).replace(/\n/g, '<br>')}</div></div>` : ''}
+    <div class="tarjeta form-tarjeta" id="ft-prog"></div></div></main>`;
+  $('#v').addEventListener('click', irInicio);
+  $$('.st').forEach(b => b.addEventListener('click', () => { if(+b.dataset.p <= P.max) irPasoProg(+b.dataset.p); }));
+  const ft = $('#ft-prog');
+  const pie = (sig = 'Continuar') => `<div class="pie-form">${P.paso ? `<button class="btn btn-suave" id="atras">Atrás</button>` : '<span></span>'}<span class="esp"></span>${p.id || P.paso ? `<button class="btn btn-texto" id="guardar">${icon('check')}Guardar avance</button>` : ''}<button class="btn btn-primario btn-lg" id="sig">${sig} ${icon('flecha-der')}</button></div>`;
+  if(P.paso === 0 || P.paso === 2){
+    const keys = PROG_PASO_CAMPOS[P.paso];
+    ft.innerHTML = `<h2>${PASOS_PROG[P.paso]}</h2><p class="intro">${P.paso === 0 ? 'Lo esencial para identificar el técnico o programa. Corresponde al formulario DCD-34.' : 'Textos para la página del programa y la Plantilla Maestra.'}</p>${P.paso === 2 ? htmlMedidorMini(p) : ''}<div id="campos"></div>${pie()}`;
+    const cont = $('#campos', ft);
+    keys.forEach(k => cont.appendChild(crearCampo(k, PROG_CAMPOS[k], p, k2 => {
+      if(k2 === 'tipo' && p.tipo === 'Programa profesional' && p.nivel !== 'NA'){ p.nivel = 'NA'; pintarPrograma(); }
+      if(k2 === 'nivel' && nivelMNC(p.nivel)){ const n = nivelMNC(p.nivel); if(!p.ingresoReq || MNC.some(m => p.ingresoReq === '1. ' + m.ingreso)) p.ingresoReq = '1. ' + n.ingreso; }
+      borradorProg();
+    }, {})));
+  } else if(P.paso === 1){
+    ft.innerHTML = `<div class="plan-cab"><div><h2>Plan de estudios</h2><p class="intro" style="margin-bottom:0">Escriba el nombre de cada curso: si existe en la Plantilla Maestra, elíjalo de la lista. Si no existe, queda marcado como <b>curso nuevo</b> para crearlo usted o asignarlo a un docente.</p></div>
+      <button class="btn btn-sm btn-texto" id="ia-plan" style="font-size:12px;color:var(--tinta-3)">{ } Proponer cursos con IA</button></div>
+      <div id="medidor"></div><div id="periodos"></div>
+      <button class="btn btn-suave" id="add-per" style="margin-top:14px">${icon('mas')}Agregar periodo</button>${pie()}`;
+    if(!p.plan.length) p.plan.push(itemNuevo(1));
+    pintarPlan();
+    $('#add-per').addEventListener('click', () => { const max = Math.max(0, ...p.plan.map(it => (+it.periodo || 1) + (+it.dura || 1) - 1)); p.plan.push(itemNuevo(max + 1)); pintarPlan(); borradorProg(); setTimeout(() => { const ins = $$('.curso-in'); if(ins.length) ins[ins.length - 1].focus(); }, 30); });
+    $('#ia-plan').addEventListener('click', dialogoIAPlan);
+  } else {
+    pasoMarco(ft);
+    return;
+  }
+  $('#sig').addEventListener('click', async () => {
+    if(P.paso !== 1){ const e = validarProg(p, PROG_PASO_CAMPOS[P.paso]); if(Object.keys(e).length){ mostrarErrores($('#campos'), e); return; } }
+    else { p.plan = p.plan.filter(it => String(it.nombre || '').trim()); if(!p.plan.length){ toast('Agregue al menos un curso.', 'error'); p.plan.push(itemNuevo(1)); pintarPlan(); return; } }
+    if(p.id || P.paso >= 1){ if(!(await guardarProg(p, false))) return; }
+    irPasoProg(P.paso + 1);
+  });
+  if($('#atras')) $('#atras').addEventListener('click', () => irPasoProg(P.paso - 1));
+  if($('#guardar')) $('#guardar').addEventListener('click', async () => { if(P.paso === 1) p.plan = p.plan.filter(it => String(it.nombre || '').trim()); if(await guardarProg(p, false)) { toast('Avance guardado.'); pintarPrograma(); } });
+}
+function irPasoProg(n){ const P = S.prog; P.paso = n; P.max = Math.max(P.max, n); borradorProg(); pintarPrograma(); }
+function htmlMedidorMini(p){ const st = statsPlan(p), ev = evaluarNivel(p, st);
+  return `<div class="med-mini" style="--c:${ev.color}"><i></i><span><b>${esc((ev.obj || MNC_SIN).nombre)}</b> · ${st.cursos} cursos · ${fmtN(st.creditos)} créditos · ${fmtN(st.horasTotales)} h totales · ${st.meses} meses</span><span class="esp"></span><span class="nota">${esc(ev.msj)}</span></div>`; }
+const itemNuevo = periodo => ({ uid:uidP(), periodo, dura:1, codigo:'', nombre:'', horas:16, req:'', nuevo:false, registroId:'', asignado:'' });
+
+function pintarPlan(){
+  const p = S.prog.p, cont = $('#periodos'); if(!cont) return;
+  $('#medidor').innerHTML = htmlMedidor(p);
+  const pers = [...new Set(p.plan.map(it => +it.periodo || 1))].sort((a, b) => a - b);
+  const docentes = S.boot.equipo.filter(m => m.activo && m.escuela === p.escuela && m.rol !== 'Revisor' && m.correo !== S.user.email);
+  cont.innerHTML = pers.map(per => {
+    const items = p.plan.filter(it => (+it.periodo || 1) === per);
+    const ocupa = p.plan.filter(it => +it.periodo < per && +it.periodo + (+it.dura || 1) - 1 >= per);
+    return `<div class="periodo" data-per="${per}"><div class="per-cab"><span class="per-n">${per}</span><b>Periodo ${per}</b><span class="nota">5 semanas${items.length > 1 ? ` · ${items.length} cursos en paralelo` : ''}</span>
+        ${ocupa.length ? `<span class="nota">· continúa ${ocupa.map(x => esc(x.nombre)).join(', ')}</span>` : ''}<span class="esp"></span></div>
+      ${items.map(it => filaCurso(p, it, docentes)).join('')}
+      <button class="btn btn-sm btn-texto add-par" data-per="${per}">${icon('mas')}Otro curso en este periodo</button></div>`;
+  }).join('');
+  $$('.curso', cont).forEach(w => activarFilaCurso(w, p, docentes));
+  $$('.add-par', cont).forEach(b => b.addEventListener('click', () => { p.plan.push(itemNuevo(+b.dataset.per)); pintarPlan(); borradorProg(); setTimeout(() => { const f = $$(`.periodo[data-per="${b.dataset.per}"] .curso-in`); if(f.length) f[f.length - 1].focus(); }, 30); }));
+}
+function filaCurso(p, it, docentes){
+  const r = resolverItem(it), previos = p.plan.filter(x => x.uid !== it.uid && String(x.nombre || '').trim() && (+x.periodo || 1) < (+it.periodo || 1));
+  const etq = { maestra:`<span class="ori ok">${icon('check')}${esc(r.codigo)} · Plantilla Maestra${r.pm && r.pm.escuela && r.pm.escuela !== p.escuela ? ' · ' + esc(r.pm.escuela) : ''}${r.pm && /inactivo/i.test(r.pm.estado) ? ' · inactivo' : ''}</span>`,
+    pendiente:`<span class="ori nuevo">Curso nuevo · por completar</span>`, registrado:`<span class="ori rev">Curso nuevo · registrado</span>`, revision:`<span class="ori rev">Curso nuevo · en revisión DCD</span>`,
+    observado:`<span class="ori nuevo">Curso nuevo · con observaciones</span>`, aprobado:`<span class="ori ok">${icon('check')}${esc(r.codigo)} · aprobado</span>` }[r.estado];
+  const editableHoras = it.nuevo && !it.registroId;
+  return `<div class="curso" data-uid="${it.uid}">
+    <div class="c-nom"><div class="ac-wrap"><input class="curso-in" type="text" value="${esc(it.nombre)}" placeholder="Nombre o código del curso" autocomplete="off" ${it.registroId ? 'readonly' : ''}><div class="ac-lista" hidden></div></div>
+      <div class="c-meta">${String(it.nombre || '').trim() ? etq : '<span class="nota">Escriba para buscar en la Plantilla Maestra</span>'}
+        ${it.nuevo && !it.registroId && String(it.nombre || '').trim() ? `<label class="c-asig">Lo completa <select data-k="asignado"><option value="">Yo</option>${docentes.map(d => `<option value="${esc(d.correo)}" ${it.asignado === d.correo ? 'selected' : ''}>${esc(d.nombre || d.correo)}</option>`).join('')}</select></label>
+          ${!it.asignado || it.asignado === S.user.email ? `<button class="btn btn-sm btn-texto crear-ya" type="button">Crear ahora ${icon('flecha-der')}</button>` : `<span class="nota">${it.avisado === it.asignado ? 'Aviso enviado' : 'Se avisará al guardar'}</span>`}` : ''}</div></div>
+    <div class="c-h"><label>Horas lectivas</label>${editableHoras ? `<select data-k="horas">${[8, 12, 16, 20, 24, 32, 40, 48, 56, 64].map(h => `<option ${+it.horas === h ? 'selected' : ''}>${h}</option>`).join('')}</select>` : `<div class="c-fijo">${r.horas || '—'}</div>`}<span class="nota">${fmtN(r.creditos)} cr · ${r.total} h</span></div>
+    <div class="c-d"><label>Duración</label><select data-k="dura"><option value="1" ${+it.dura === 1 ? 'selected' : ''}>1 periodo</option><option value="2" ${+it.dura === 2 ? 'selected' : ''}>2 periodos</option><option value="3" ${+it.dura === 3 ? 'selected' : ''}>3 periodos</option></select></div>
+    <div class="c-r"><label>Requisito</label><select data-k="req"><option value="">Ninguno</option>${previos.map(x => `<option value="${x.uid}" ${it.req === x.uid ? 'selected' : ''}>${esc((resolverItem(x).codigo ? resolverItem(x).codigo + ' ' : '') + x.nombre).slice(0, 48)}</option>`).join('')}</select></div>
+    <button class="btn-icono c-x" title="Quitar curso" type="button">${icon('x')}</button></div>`;
+}
+function sugerenciasCurso(q, p){
+  const t = norm(q); if(t.length < 2) return [];
+  const pal = t.split(/\s+/).filter(Boolean);
+  const pre = (S.boot.schools.find(s => s.nombre === p.escuela) || {}).prefijo;
+  const ok = s => pal.every(w => s.includes(w));
+  const pm = (PM_CACHE || []).filter(c => ok(norm(c.codigo + ' ' + c.nombre))).map(c => ({ fuente:'maestra', codigo:c.codigo, nombre:c.nombre, horas:Number(c.horas) || 16, escuela:c.escuela, inactivo:/inactivo/i.test(c.estado),
+    peso:(c.escuela === p.escuela || (partesCodigo(c.codigo) || {}).prefijo === pre ? 0 : 2) + (/inactivo/i.test(c.estado) ? 3 : 0) + (norm(c.nombre).startsWith(t) || norm(c.codigo).startsWith(t) ? 0 : 1) }));
+  const regs = (S.todos || []).filter(r => r.escuela === p.escuela && ['Pendiente', 'Con observaciones'].includes(estadoDe(r)) && ok(norm(r.nombre))).map(r => ({ fuente:'registro', id:r.id, codigo:'', nombre:r.nombre, horas:Number(r.horas === 'Otro' ? r.horasOtro : r.horas) || 16, escuela:r.escuela, peso:1 }));
+  return regs.concat(pm).sort((a, b) => a.peso - b.peso || a.nombre.localeCompare(b.nombre, 'es')).slice(0, 8);
+}
+function activarFilaCurso(w, p, docentes){
+  const it = p.plan.find(x => x.uid === w.dataset.uid); if(!it) return;
+  const inp = $('.curso-in', w), lista = $('.ac-lista', w);
+  let sug = [], idx = -1;
+  const elegir = s => {
+    if(s.fuente === 'maestra') Object.assign(it, { codigo:s.codigo, nombre:s.nombre, horas:s.horas, nuevo:false, registroId:'', asignado:'' });
+    else Object.assign(it, { codigo:'', nombre:s.nombre, horas:s.horas, nuevo:true, registroId:s.id, asignado:'' });
+    lista.hidden = true; pintarPlan(); borradorProg();
+  };
+  const mostrar = () => {
+    sug = sugerenciasCurso(inp.value, p); idx = -1;
+    if(!sug.length){ lista.hidden = true; return; }
+    lista.innerHTML = sug.map((s, i) => `<button type="button" class="ac-op" data-i="${i}"><i class="punto" style="background:${esc(colorDe(s.escuela))}"></i><span class="ac-t"><b>${esc(s.nombre)}</b><small>${s.fuente === 'maestra' ? esc(s.codigo) + ' · ' + esc(s.escuela || '') : 'En revisión DCD · ' + esc(s.id)}${s.inactivo ? ' · inactivo' : ''}</small></span><span class="ac-h">${s.horas} h</span></button>`).join('')
+      + `<div class="ac-pie">¿No está? Siga escribiendo y quedará como <b>curso nuevo</b>.</div>`;
+    lista.hidden = false;
+    $$('.ac-op', lista).forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); elegir(sug[+b.dataset.i]); }));
+  };
+  inp.addEventListener('input', () => {
+    it.nombre = inp.value; if(it.codigo || it.registroId){ it.codigo = ''; it.registroId = ''; } it.nuevo = !!inp.value.trim();
+    mostrar(); borradorProg();
+    const meta = $('.c-meta', w); if(meta && it.nuevo) meta.innerHTML = `<span class="ori nuevo">Curso nuevo</span><span class="nota">Elija de la lista si ya existe</span>`;
+  });
+  inp.addEventListener('focus', () => { if(inp.value.trim() && !it.codigo) mostrar(); });
+  inp.addEventListener('keydown', e => {
+    if(lista.hidden) return;
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + sug.length) % sug.length; $$('.ac-op', lista).forEach((b, i) => b.classList.toggle('act', i === idx)); }
+    else if(e.key === 'Enter' && idx >= 0){ e.preventDefault(); elegir(sug[idx]); }
+    else if(e.key === 'Escape') lista.hidden = true;
+  });
+  inp.addEventListener('blur', () => setTimeout(() => {
+    lista.hidden = true;
+    const v = inp.value.trim(); if(!v || it.codigo || it.registroId) return;
+    const exacto = (PM_CACHE || []).find(c => norm(c.codigo) === norm(v) || norm(c.nombre) === norm(v));
+    if(exacto){ elegir({ fuente:'maestra', codigo:exacto.codigo, nombre:exacto.nombre, horas:Number(exacto.horas) || 16, escuela:exacto.escuela }); return; }
+    it.nuevo = true; pintarPlan();
+  }, 120));
+  $$('select[data-k]', w).forEach(s => s.addEventListener('change', () => {
+    const k = s.dataset.k; it[k] = k === 'horas' || k === 'dura' ? +s.value : s.value;
+    if(k === 'asignado' && !s.value) it.asignado = '';
+    pintarPlan(); borradorProg();
+  }));
+  $('.c-x', w).addEventListener('click', () => {
+    p.plan = p.plan.filter(x => x.uid !== it.uid); p.plan.forEach(x => { if(x.req === it.uid) x.req = ''; });
+    if(!p.plan.length) p.plan.push(itemNuevo(1));
+    // Cierra huecos: los periodos quedan seguidos
+    const pers = [...new Set(p.plan.map(x => +x.periodo || 1))].sort((a, b) => a - b); const mapa = {}; let n = 1;
+    pers.forEach(q => { mapa[q] = n; const larga = Math.max(...p.plan.filter(x => +x.periodo === q).map(x => +x.dura || 1)); n += larga; });
+    p.plan.forEach(x => x.periodo = mapa[+x.periodo || 1]);
+    pintarPlan(); borradorProg();
+  });
+  const crear = $('.crear-ya', w);
+  if(crear) crear.addEventListener('click', async () => {
+    p.plan = p.plan.filter(x => String(x.nombre || '').trim());
+    if(!(await guardarProg(p, false))) return;
+    completarPendiente(p, it);
+  });
+}
+
+/* ---------- Propuesta de cursos con IA (CSV de la Plantilla Maestra + prompt + JSON) ---------- */
+function csvMaestra(){
+  const cel = v => `"${String(v == null ? '' : v).replace(/"/g, '""').replace(/\s+/g, ' ').trim()}"`;
+  const filas = (PM_CACHE || []).filter(c => !/inactivo|descartado/i.test(c.estado)).map(c => [c.codigo, c.nombre, c.escuela, c.horas, c.nivel, c.moneda, String(c.desc || '').slice(0, 220)]);
+  return [['Código', 'Nombre', 'Escuela', 'Horas lectivas', 'Nivel', 'Moneda', 'Descripción']].concat(filas).map(f => f.map(cel).join(',')).join('\r\n');
+}
+function promptPlan(p){
+  const n = nivelMNC(p.nivel);
+  return `Actúa como especialista en diseño curricular de la Universidad CENFOTEC (Costa Rica).
+Te adjunto el archivo CSV «plantilla_maestra.csv» con los microcursos vigentes (código, nombre, escuela, horas lectivas, nivel, moneda y descripción).
+
+Necesito una propuesta de plan de estudios para este programa:
+- Nombre: ${p.nombre || '(sin nombre)'}
+- Tipo: ${p.tipo}
+- Escuela: ${p.escuela}
+- Nivel buscado: ${n ? `${n.nombre} del Marco Nacional de Cualificaciones (${n.min === n.max ? n.min : n.min + ' a ' + n.max} horas totales)` : 'sin nivel del Marco'}
+${p.tematicas ? `- Temáticas: ${p.tematicas}\n` : ''}${p.descripcion ? `- Descripción: ${p.descripcion}\n` : ''}
+Cómo se calculan las horas:
+- Créditos por horas lectivas: menos de 16 h = 0,5; de 16 a 23 h = 1; de 24 a 31 h = 1,5; de 32 a 39 h = 2; y así, medio crédito más cada 8 horas.
+- Horas totales de un curso = créditos × 45 (ej. 16 horas lectivas = 1 crédito = 45 horas totales).
+- Cada periodo dura 5 semanas. Varios cursos pueden ir en el mismo periodo (en paralelo) y un curso largo puede durar 2 periodos.
+
+Reglas:
+1. Usa primero cursos existentes del CSV, sobre todo de la escuela ${p.escuela}, copiando el código y el nombre exactamente.
+2. Si hace falta un curso que no existe, propónlo con "nuevo": true, un nombre claro y sus horas lectivas (16, 24 o 32).
+3. Ordena los cursos de lo básico a lo avanzado e indica el requisito con el código (o el nombre si es nuevo) de un curso anterior, si aplica.
+4. Ajusta la cantidad de cursos para que las horas totales queden dentro del rango del nivel buscado.
+5. Responde SOLO con un JSON válido, sin explicaciones, con esta forma:
+
+{
+  "plan": [
+    { "periodo": 1, "codigo": "FUN-600", "nombre": "Nombre exacto del curso", "horas_lectivas": 16, "nuevo": false, "duracion_periodos": 1, "requisito": "" }
+  ]
+}`;
+}
+function dialogoIAPlan(){
+  const p = S.prog.p, z = document.createElement('div');
+  z.innerHTML = `<ol class="pasos-g" style="margin:0 0 4px">
+      <li><span class="n">1</span><span>Descargue la Plantilla Maestra en CSV.</span></li>
+      <li><span class="n">2</span><span>Copie el prompt y péguelo en su IA junto con el CSV.</span></li>
+      <li><span class="n">3</span><span>Pegue aquí el JSON que le devuelva. Después puede editar todo.</span></li></ol>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-suave btn-sm" id="ia-csv">${icon('bajar')}Descargar CSV</button><button class="btn btn-suave btn-sm" id="ia-cp">${icon('hoja')}Copiar prompt</button></div>
+    <div class="campo"><label for="ia-js">JSON con la propuesta</label><textarea id="ia-js" rows="9" spellcheck="false" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px" placeholder='{ "plan": [ … ] }'></textarea><div class="err" id="ia-err" style="display:none"></div></div>
+    ${p.plan.some(it => String(it.nombre || '').trim()) ? `<label style="display:flex;gap:8px;align-items:center;font-size:13.5px"><input type="checkbox" id="ia-rem" checked style="accent-color:var(--azul)"> Reemplazar los cursos que ya tiene en el plan</label>` : ''}`;
+  $('#ia-csv', z).addEventListener('click', async () => {
+    if(!PM_CACHE || !PM_CACHE.length){ espera('Cargando la Plantilla Maestra…'); await asegurarCatalogos(); finEspera(); }
+    const blob = new Blob(['﻿' + csvMaestra()], { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plantilla_maestra.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $('#ia-cp', z).addEventListener('click', async () => {
+    const t = promptPlan(p);
+    try { await navigator.clipboard.writeText(t); toast('Prompt copiado. Péguelo en su IA con el CSV.'); }
+    catch(e){ const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Prompt copiado.'); }
+  });
+  modal({ titulo:'Proponer cursos con IA', ancho:true, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('flecha-der')}Cargar al plan`, clase:'btn-primario', accion: () => {
+    const err = m => { const e = $('#ia-err', z); e.innerHTML = `${icon('alerta')}<span>${esc(m)}</span>`; e.style.display = 'flex'; return false; };
+    let txt = $('#ia-js', z).value.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim(); const a = txt.search(/[\[{]/); if(a > 0) txt = txt.slice(a);
+    let d; try { d = JSON.parse(txt); } catch(e){ return err('El texto no es un JSON válido. Pida a la IA que devuelva solo el JSON.'); }
+    const lista = Array.isArray(d) ? d : Array.isArray(d.plan) ? d.plan : Array.isArray(d.cursos) ? d.cursos : [];
+    if(!lista.length) return err('No se encontraron cursos en el JSON.');
+    const nuevos = lista.filter(o => o && typeof o === 'object' && (o.nombre || o.codigo)).map(o => {
+      const cod = String(o.codigo || '').trim().toUpperCase(), pm = cod ? (PM_CACHE || []).find(c => c.codigo.toUpperCase() === cod) : (PM_CACHE || []).find(c => norm(c.nombre) === norm(o.nombre));
+      const it = itemNuevo(Math.max(1, parseInt(o.periodo, 10) || 1)); it.dura = Math.min(3, Math.max(1, parseInt(o.duracion_periodos, 10) || 1)); it._req = String(o.requisito || '').trim();
+      if(pm) Object.assign(it, { codigo:pm.codigo, nombre:pm.nombre, horas:Number(pm.horas) || 16, nuevo:false });
+      else Object.assign(it, { nombre:String(o.nombre || cod).trim(), horas:Number(o.horas_lectivas || o.horas) || 16, nuevo:true });
+      return it;
+    });
+    nuevos.forEach(it => { if(it._req){ const r = nuevos.find(x => x !== it && (norm(x.codigo) === norm(it._req) || norm(x.nombre) === norm(it._req))); if(r) it.req = r.uid; } delete it._req; });
+    const rem = $('#ia-rem', z); if(!rem || rem.checked) p.plan = nuevos; else { const base = Math.max(0, ...p.plan.map(it => (+it.periodo || 1) + (+it.dura || 1) - 1)); nuevos.forEach(it => it.periodo += base); p.plan = p.plan.filter(it => String(it.nombre || '').trim()).concat(nuevos); }
+    setTimeout(() => { pintarPlan(); borradorProg(); toast(`${nuevos.length} curso(s) cargados. Revise y ajuste lo que necesite.`); }, 30);
+    return true;
+  } }] });
+}
+
+/* ---------- Paso final: Marco de Cualificaciones, confirmación y envío ---------- */
+function pasoMarco(ft){
+  const P = S.prog, p = P.p, st = statsPlan(p), ev = evaluarNivel(p, st), n = ev.obj;
+  const reqs = n ? [`Requisito de ingreso: ${n.ingreso}.`].concat(n.req) : [];
+  const faltan = p.plan.filter(it => it.nuevo && !it.registroId && String(it.nombre || '').trim());
+  const confirm = n ? `Confirmo que el ${p.tipo.toLowerCase()} «${p.nombre}» se alinea con el nivel ${n.nombre} del Marco Nacional de Cualificaciones de la Educación y Formación Técnica Profesional de Costa Rica (MNC-EFTP-CR): ${st.cursos} cursos, ${fmtN(st.creditos)} créditos y ${fmtN(st.horasTotales)} horas totales (el nivel pide ${n.min === n.max ? fmtN(n.min) : fmtN(n.min) + ' a ' + fmtN(n.max)} horas), con una duración de ${st.meses} meses (${st.periodos} periodos de 5 semanas).`
+    : `Confirmo que el programa profesional «${p.nombre}» tiene ${st.cursos} cursos, ${fmtN(st.creditos)} créditos y ${fmtN(st.horasTotales)} horas totales, con una duración de ${st.meses} meses (${st.periodos} periodos de 5 semanas).`;
+  ft.innerHTML = `<h2>Marco y envío</h2><p class="intro">Revise el nivel, confirme los requisitos y envíe a Desarrollo Curricular.</p>
+    ${htmlMedidor(p)}
+    ${n ? `<div class="resumen-grupo" style="margin-top:18px"><div class="cab"><span>${esc(n.nombre)} · lo que pide el Marco</span></div><p style="margin:0 0 10px;color:var(--tinta-2);font-size:13.5px">${esc(n.perfil)}</p>
+      <div class="checks">${reqs.map((r, i) => `<label class="check-req"><input type="checkbox" data-rq="${i}" ${(p.confirmados || []).includes(r) ? 'checked' : ''}><span>${esc(r)}</span></label>`).join('')}</div></div>` : ''}
+    ${faltan.length ? `<div class="alerta aviso" style="margin-top:16px">${icon('alerta')}<div><b>Faltan ${faltan.length} curso(s) nuevo(s) por registrar.</b> Para enviar el programa, cada curso nuevo debe estar registrado (puede seguir en revisión).<br>${faltan.map(it => `· ${esc(it.nombre)} — ${it.asignado && it.asignado !== S.user.email ? 'asignado a ' + esc((S.boot.equipo.find(m => m.correo === it.asignado) || {}).nombre || it.asignado) : `<button class="btn btn-sm btn-texto" data-cr="${it.uid}" style="padding:0 4px">Crearlo ahora</button>`}`).join('<br>')}</div></div>` : ''}
+    ${ev.estado === 'falta' || ev.estado === 'excede' ? `<div class="alerta error" style="margin-top:16px">${icon('alerta')}<div>${esc(ev.msj)} Ajuste el plan o cambie el nivel en «Datos generales» antes de enviar.</div></div>` : ''}
+    <div class="resumen-grupo" style="margin-top:18px"><div class="cab"><span>Resumen</span><button class="btn btn-sm btn-texto" data-ir="0">Editar datos</button></div><dl>
+      <dt>Nombre</dt><dd>${esc(p.nombre)}</dd><dt>Tipo</dt><dd>${esc(p.tipo)}</dd><dt>Escuela</dt><dd>${esc(p.escuela)}</dd><dt>Código</dt><dd>${p.asignaDCD === 'No' ? esc(String(p.codigo).toUpperCase()) : 'Lo asigna Desarrollo Curricular (consecutivo)'}</dd>
+      <dt>Creación</dt><dd>${esc(p.anio)} / ${esc(p.mes)}</dd><dt>Público meta</dt><dd>${esc(p.publico)}</dd><dt>Modalidad</dt><dd>${esc(p.modalidad)}</dd><dt>Duración</dt><dd>${st.meses} meses</dd></dl></div>
+    <div class="resumen-grupo"><div class="cab"><span>Plan de estudios</span><button class="btn btn-sm btn-texto" data-ir="1">Editar plan</button></div>${tablaPlan(p)}</div>
+    <label class="check-final"><input type="checkbox" id="conf"><span>${esc(confirm)}</span></label>
+    <div class="pie-form"><button class="btn btn-suave" id="atras">Atrás</button><span class="esp"></span><button class="btn btn-texto" id="xls">${icon('excel')}Descargar DCD-34</button><button class="btn btn-primario btn-lg" id="enviar">${p.estado === 'Con observaciones' ? 'Reenviar a revisión' : 'Enviar a Desarrollo Curricular'}</button></div>`;
+  $$('[data-ir]', ft).forEach(b => b.addEventListener('click', () => irPasoProg(+b.dataset.ir)));
+  $$('[data-rq]', ft).forEach(c => c.addEventListener('change', () => { p.confirmados = $$('[data-rq]', ft).filter(x => x.checked).map(x => reqs[+x.dataset.rq]); borradorProg(); }));
+  $$('[data-cr]', ft).forEach(b => b.addEventListener('click', () => completarPendiente(p, p.plan.find(it => it.uid === b.dataset.cr))));
+  $('#atras').addEventListener('click', () => irPasoProg(2));
+  $('#xls').addEventListener('click', () => excelDCD34(p));
+  $('#enviar').addEventListener('click', async () => {
+    const e0 = validarProg(p, PROG_PASO_CAMPOS[0]), e2 = validarProg(p, PROG_PASO_CAMPOS[2]);
+    if(Object.keys(e0).length){ toast('Faltan datos generales.', 'error'); return irPasoProg(0); }
+    if(Object.keys(e2).length){ toast('Faltan textos de descripción y perfiles.', 'error'); return irPasoProg(2); }
+    if(faltan.length){ toast('Registre primero los cursos nuevos.', 'error'); return; }
+    if(ev.estado === 'falta' || ev.estado === 'excede'){ toast('Las horas no corresponden al nivel elegido.', 'error'); return; }
+    if(n && $$('[data-rq]', ft).some(x => !x.checked)){ toast('Confirme los requisitos del Marco.', 'error'); return; }
+    if(!$('#conf').checked){ toast('Marque la confirmación final.', 'error'); return; }
+    p.estado = 'Enviado'; p.observacion = '';
+    if(!(await guardarProg(p, false))){ p.estado = 'En construcción'; return; }
+    espera('Enviando el aviso…');
+    try { await Almacen().enviarCorreo(correoPrograma(p)); } catch(err){ console.warn(err); }
+    finEspera(); ls.del(claveProg()); S.prog = null;
+    pantallaExitoProg(p);
+  });
+}
+function tablaPlan(p){
+  const items = (p.plan || []).filter(it => String(it.nombre || '').trim()).slice().sort((a, b) => a.periodo - b.periodo);
+  if(!items.length) return '<div class="vacio" style="padding:18px">Sin cursos.</div>';
+  const st = statsPlan(p);
+  return `<div class="tabla-wrap"><table class="tabla plan-t"><thead><tr><th>Periodo</th><th>Código</th><th>Curso</th><th>Requisito</th><th class="num">Horas</th><th class="num">Créditos</th><th class="num">Totales</th></tr></thead><tbody>${items.map(it => { const r = resolverItem(it), rq = it.req ? items.find(x => x.uid === it.req) : null;
+    return `<tr><td class="nw">${it.periodo}${+it.dura > 1 ? '–' + (+it.periodo + +it.dura - 1) : ''}</td><td class="nw">${r.codigo ? esc(r.codigo) : `<span class="etiqueta pend">${{ pendiente:'Por completar', observado:'Con observaciones' }[r.estado] || 'Nuevo · en revisión'}</span>`}</td><td class="nom">${esc(it.nombre)}</td><td class="nw">${rq ? esc(resolverItem(rq).codigo || rq.nombre) : '—'}</td><td class="num">${r.horas}</td><td class="num">${fmtN(r.creditos)}</td><td class="num">${r.total}</td></tr>`; }).join('')}
+    <tr class="tot"><td colspan="4">Total · ${st.periodos} periodos · ${st.meses} meses</td><td class="num">${fmtN(st.horasClase)}</td><td class="num">${fmtN(st.creditos)}</td><td class="num">${fmtN(st.horasTotales)}</td></tr></tbody></table></div>`;
+}
+function correoPrograma(p){
+  const st = statsPlan(p), n = nivelMNC(p.nivel) || MNC_SIN;
+  const html = `<div style="background:#f6f7f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e8ee;border-radius:12px;overflow:hidden">
+    <div style="padding:20px 26px;border-bottom:2px solid ${colorDe(p.escuela)}"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a92a3">Universidad CENFOTEC · Desarrollo Curricular y Docente</div><div style="font-size:18px;font-weight:700;color:#164a98;margin-top:4px">Nuevo ${esc(p.tipo.toLowerCase())} para revisión</div></div>
+    <div style="padding:22px 26px;font-size:14px;line-height:1.6;color:#141b2b"><p>${esc(S.user.name)} (${esc(S.user.email)}) envió <b>«${esc(p.nombre)}»</b> de la escuela de ${esc(p.escuela)}.</p>
+    <p><b>${esc(n.nombre)}</b> · ${st.cursos} cursos · ${fmtN(st.creditos)} créditos · ${fmtN(st.horasTotales)} horas totales · ${st.meses} meses</p>
+    <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;background:#f6f7f9;border-radius:8px;padding:12px 14px">${esc(planTexto(p))}</pre>
+    <p style="font-size:13px"><a href="https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/edit" style="color:#164a98;font-weight:600">Abrir la hoja de registros (pestaña Programas) →</a></p></div></div></div>`;
+  return { to:S.boot.to.length ? S.boot.to.slice() : [S.user.email], cc:[], subject:`Nuevo ${p.tipo.toLowerCase()} · ${p.nombre} · ${p.escuela}`, html };
+}
+function pantallaExitoProg(p){
+  PROGS = null; window.scrollTo(0, 0);
+  app.innerHTML = `<main class="pantalla"><div class="angosto"><div class="tarjeta exito"><div class="circulo"><svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <h1>Programa enviado</h1><p>Desarrollo Curricular recibió «${esc(p.nombre)}» y le avisará si hay observaciones.</p>
+    <div class="botones"><button class="btn btn-primario btn-lg" id="xls">${icon('excel')}Descargar DCD-34</button><button class="btn btn-texto btn-lg" id="ini">Volver al inicio</button></div></div></div></main>`;
+  $('#xls').addEventListener('click', () => excelDCD34(p));
+  $('#ini').addEventListener('click', irInicio);
+}
+function verPrograma(p, rev){
+  const st = statsPlan(p);
+  const z = document.createElement('div');
+  z.innerHTML = `<div class="meta-ficha" style="margin-top:0"><span>${ESTADOS_PROG[p.estado] || ''}</span><span><b>Escuela:</b> ${esc(p.escuela)}</span><span><b>Tipo:</b> ${esc(p.tipo)}</span><span><b>Registrado por:</b> ${esc(p.registradoPor)}</span>${p.codigoAsignado ? `<span><b>Código:</b> ${esc(p.codigoAsignado)}</span>` : ''}<span><b>ID:</b> ${esc(p.id)}</span></div>
+    ${p.observacion && p.estado === 'Con observaciones' ? `<div class="alerta aviso" style="margin-top:14px">${icon('alerta')}<div><b>Observaciones</b><br>${esc(p.observacion).replace(/\n/g, '<br>')}</div></div>` : ''}
+    <div style="margin-top:16px">${htmlMedidor(p)}</div>
+    <div class="resumen-grupo" style="margin-top:16px"><div class="cab"><span>Plan de estudios</span></div>${tablaPlan(p)}</div>
+    <div class="resumen-grupo"><div class="cab"><span>Datos del programa</span></div><dl>${['tematicas','descripcion','mensaje','palabras','ingresoReq','perfilIngreso','perfilSalida','ocupacional'].map(k => `<dt>${esc(PROG_CAMPOS[k].label)}</dt><dd>${esc(p[k] || '—')}</dd>`).join('')}
+      <dt>Código propuesto</dt><dd>${p.asignaDCD === 'No' ? esc(p.codigo) : 'Seguir consecutivo'}</dd><dt>Creación</dt><dd>${esc(p.anio)} / ${esc(p.mes)}</dd><dt>Público meta</dt><dd>${esc(p.publico)}</dd><dt>Modalidad · moneda</dt><dd>${esc(p.modalidad)} · ${esc((p.moneda || []).join(', '))}</dd><dt>Duración</dt><dd>${st.meses} meses</dd></dl></div>`;
+  const acc = [{ html:`${icon('excel')}DCD-34`, clase:'btn-suave', accion: async () => { await excelDCD34(p); return false; } }];
+  if(rev && p.estado !== 'Aprobado') acc.push({ html:`${icon('correo')}Observación`, clase:'btn-suave', accion: () => { setTimeout(() => dialogoObsPrograma(p), 30); return true; } },
+    { html:`${icon('check')}Aprobar`, clase:'btn-primario', accion: () => { setTimeout(() => dialogoAprobarPrograma(p), 30); return true; } });
+  if(!rev && ['En construcción', 'Con observaciones'].includes(p.estado) && (p.correo === S.user.email || escuelasQueGestiono().includes(p.escuela))) acc.push({ html:`${icon('lapiz')}Editar`, clase:'btn-primario', accion: () => { abrirPrograma(p); return true; } });
+  modal({ titulo:p.nombre || 'Programa', ancho:true, cuerpo:z, acciones:acc });
+}
+
+/* ---------- Revisión DCD de programas ---------- */
+async function tablaProgramasRev(cont){
+  const R = S.rev;
+  let progs; try { await asegurarCatalogos(); progs = await cargarProgramas(true); } catch(e){ cont.innerHTML = `<div class="vacio">${esc(e.message)}</div>`; return; }
+  const lista = progs.filter(p => p.estado !== 'En construcción' && (!R.escuela || p.escuela === R.escuela));
+  const c = $('#c-prog'); if(c) c.textContent = `(${progs.filter(p => p.estado === 'Enviado').length})`;
+  cont.innerHTML = lista.length ? `<div class="tabla-wrap"><table class="tabla"><thead><tr><th>Estado</th><th>Nombre</th><th>Escuela</th><th>Tipo</th><th>Nivel</th><th class="num">Cursos</th><th class="num">Horas totales</th><th>Cursos nuevos</th><th>Registrado por</th></tr></thead><tbody>${lista.map((p, i) => { const st = statsPlan(p), nv = nivelMNC(p.nivel) || MNC_SIN;
+    const nuevos = p.plan.filter(it => it.nuevo).length, apr = p.plan.filter(it => it.nuevo && resolverItem(it).estado === 'aprobado').length;
+    return `<tr data-i="${i}"><td>${ESTADOS_PROG[p.estado] || esc(p.estado)}</td><td class="nom">${esc(p.nombre)}</td><td class="nw"><i class="punto" style="background:${esc(colorDe(p.escuela))};margin-right:7px"></i>${esc(p.escuela)}</td><td class="nw">${esc(p.tipo)}</td>
+      <td class="nw"><i class="nivel-dot" style="background:${nv.color}"></i>${esc(nv.nombre)}</td><td class="num">${st.cursos}</td><td class="num">${fmtN(st.horasTotales)}</td><td class="nw">${nuevos ? `${apr} de ${nuevos} aprobados` : '—'}</td><td>${esc(p.registradoPor)}</td></tr>`; }).join('')}</tbody></table></div>`
+    : '<div class="vacio">No hay técnicos ni programas enviados a revisión.</div>';
+  $$('tbody tr', cont).forEach(tr => tr.addEventListener('click', () => verPrograma(lista[+tr.dataset.i], true)));
+}
+function dialogoAprobarPrograma(p){
+  const pend = p.plan.filter(it => it.nuevo && resolverItem(it).estado !== 'aprobado');
+  const z = document.createElement('div');
+  z.innerHTML = `${pend.length ? `<div class="alerta aviso">${icon('alerta')}<div>${pend.length} curso(s) nuevo(s) del plan todavía no están aprobados: ${pend.map(it => esc(it.nombre)).join(', ')}. Puede aprobarlos en «Pendientes».</div></div>` : ''}
+    <div class="campo"><label for="ap-cod">Código del programa</label><input id="ap-cod" type="text" maxlength="6" style="text-transform:uppercase" value="${esc(p.codigoAsignado || (p.asignaDCD === 'No' ? p.codigo : ''))}" placeholder="Máximo 6 caracteres"><div class="ayuda">${(PROGS_PM || []).length ? `Hay ${PROGS_PM.length} programas en la Plantilla Maestra; el código no debe repetirse.` : ''}</div></div>
+    <p style="font-size:13px;color:var(--tinta-2);margin:4px 0 0">Al aprobar, el programa queda marcado como aprobado en la hoja «Programas». Su ingreso a la pestaña «2.Programas» de la Plantilla Maestra se hace por ahora a mano, con el Excel DCD-34.</p>`;
+  modal({ titulo:'Aprobar ' + p.nombre, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('check')}Aprobar`, clase:'btn-primario', accion: async () => {
+    const cod = $('#ap-cod', z).value.trim().toUpperCase();
+    if(!cod){ toast('Escriba el código del programa.', 'error'); return false; }
+    if((PROGS_PM || []).some(x => x.codigo === cod)){ toast(`El código ${cod} ya existe en la Plantilla Maestra.`, 'error'); return false; }
+    Object.assign(p, { estado:'Aprobado', codigoAsignado:cod, revisadoPor:S.user.email, fechaRevision:fechaTexto(new Date()) });
+    if(!(await guardarProg(p, false))) return false;
+    toast('Programa aprobado.'); pintarRevision(); return true;
+  } }] });
+}
+function dialogoObsPrograma(p){
+  const z = document.createElement('div');
+  z.innerHTML = `${campoCorreos('op-para', 'Para', [p.correo].filter(Boolean))}${campoCorreos('op-cc', 'Copia (dirección de la escuela)', destinosEscuela(p.escuela))}
+    <div class="campo" style="margin-top:14px"><label for="op-txt">Observaciones</label><textarea id="op-txt" rows="7" placeholder="Qué debe ajustar la escuela"></textarea></div>`;
+  const borr = modoBorrador();
+  modal({ titulo:'Observación · ' + p.nombre, ancho:true, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('correo')}${borr ? 'Guardar borrador en Gmail' : 'Enviar observación'}`, clase:'btn-primario', accion: async () => {
+    const txt = $('#op-txt', z).value.trim(); if(txt.length < 5){ toast('Escriba las observaciones.', 'error'); return false; }
+    Object.assign(p, { estado:'Con observaciones', observacion:txt, revisadoPor:S.user.email, fechaRevision:fechaTexto(new Date()) });
+    if(!(await guardarProg(p, false))) return false;
+    const html = textoAHtml(`${saludo()}:\n\nRevisamos el ${p.tipo.toLowerCase()} «${p.nombre}» de la escuela de ${p.escuela} y tenemos las siguientes observaciones:\n\n${txt}\n\nPuede corregirlo desde la herramienta de Asignación de código, en «Técnicos y programas».\n\nSaludos cordiales,\n${firma()}`);
+    espera(borr ? 'Guardando borrador…' : 'Enviando…');
+    try { await Almacen().enviarCorreo({ to:listaCorreos($('#op-para', z).value), cc:listaCorreos($('#op-cc', z).value), subject:`Observaciones sobre «${p.nombre}»`, html }, borr); } catch(e){ toast(e.message, 'error'); }
+    finEspera(); toast(borr ? 'Observación guardada como borrador en Gmail.' : 'Observación enviada.'); pintarRevision(); return true;
+  } }] });
+}
+
+/* ---------- Excel con el formato DCD-34 ---------- */
+async function excelDCD34(p){
+  espera('Generando el Excel…');
+  try {
+    await cargarScript(LIB.exceljs);
+    const st = statsPlan(p), nv = nivelMNC(p.nivel) || MNC_SIN;
+    const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Formulario');
+    ws.columns = [{ width:3 }, { width:3 }, { width:14 }, { width:44 }, { width:70 }, { width:16 }, { width:12 }, { width:12 }];
+    const azul = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF164A98' } }, gris = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFEAF2FF' } };
+    ws.mergeCells('C3:F3'); ws.getCell('C3').value = 'Datos para creación de programa profesional/técnico'; ws.getCell('C3').font = { bold:true, size:15, color:{ argb:'FF164A98' } };
+    ws.mergeCells('C4:F4'); ws.getCell('C4').value = 'Dirección de Desarrollo Curricular y Docente.';
+    ws.mergeCells('C5:F5'); ws.getCell('C5').value = `Generado con la herramienta de Asignación de código · ${fechaTexto(new Date())} · ${p.id || ''}`; ws.getCell('C5').font = { italic:true, color:{ argb:'FF8A92A3' } };
+    const cab = ws.getRow(9); ['Tipo', 'Campo', 'Detalle'].forEach((t, i) => { const c = cab.getCell(3 + i); c.value = t; c.fill = azul; c.font = { bold:true, color:{ argb:'FFFFFFFF' } }; });
+    const filas = [['Tipo.\n(Técnico/Programa Profesional)', p.tipo], ['Código del programa profesional/técnico', p.asignaDCD === 'No' ? String(p.codigo).toUpperCase() : 'SEGUIR CONSECUTIVO'], ['Nombre del programa profesional/técnico', p.nombre],
+      ['Temáticas', p.tematicas], ['Fecha de creación (Año / Periodo Mensual)', `${p.anio} / ${p.mes}`], ['Público Meta', p.publico], ['Descripción del Técnico', p.descripcion], ['Mensaje Comercial', p.mensaje],
+      ['Palabras clave', p.palabras], ['Perfil de Ingreso', [p.ingresoReq, p.perfilIngreso].filter(Boolean).join('\n')], ['Perfil de Salida', p.perfilSalida], ['Perfil Ocupacional', p.ocupacional],
+      ['Duración (total en meses)', `${st.meses} meses (${st.periodos} periodos de 5 semanas)`], ['Nivel del Marco de Cualificaciones', `${nv.nombre} · ${fmtN(st.creditos)} créditos · ${fmtN(st.horasTotales)} horas totales`], ['Modalidad · Moneda', `${p.modalidad} · ${(p.moneda || []).join(', ')}`]];
+    filas.forEach((f, i) => { const r = ws.getRow(10 + i); r.getCell(3).value = 'Obligatorio'; r.getCell(4).value = f[0]; r.getCell(5).value = f[1] || '';
+      [3, 4, 5].forEach(c => { r.getCell(c).alignment = { wrapText:true, vertical:'top' }; r.getCell(c).border = { bottom:{ style:'thin', color:{ argb:'FFE4E9F2' } } }; }); r.getCell(4).font = { bold:true }; });
+    let y = 10 + filas.length + 2;
+    ws.mergeCells(`C${y}:H${y}`); ws.getCell(`C${y}`).value = 'Plan'; ws.getCell(`C${y}`).font = { bold:true, size:13, color:{ argb:'FF164A98' } }; y++;
+    const hp = ws.getRow(y); ['Periodo', 'Código del curso', 'Nombre del curso', 'Código de curso requisito', 'Horas lectivas', 'Créditos'].forEach((t, i) => { const c = hp.getCell(3 + i); c.value = t; c.fill = azul; c.font = { bold:true, color:{ argb:'FFFFFFFF' } }; }); y++;
+    const items = p.plan.filter(it => String(it.nombre || '').trim()).slice().sort((a, b) => a.periodo - b.periodo);
+    items.forEach(it => { const r = resolverItem(it), rq = it.req ? items.find(x => x.uid === it.req) : null, row = ws.getRow(y++);
+      row.values = [null, null, +it.dura > 1 ? `${it.periodo}-${+it.periodo + +it.dura - 1}` : it.periodo, r.codigo || 'NUEVO (por asignar)', it.nombre, rq ? (resolverItem(rq).codigo || rq.nombre) : '', r.horas, r.creditos]; });
+    const tot = ws.getRow(y); tot.values = [null, null, 'Total', `${st.cursos} cursos`, `${fmtN(st.horasTotales)} horas totales · ${st.meses} meses`, '', st.horasClase, st.creditos]; tot.eachCell(c => { c.font = { bold:true }; c.fill = gris; });
+    const buf = await wb.xlsx.writeBuffer();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = `DCD-34 ${String(p.nombre || 'Programa').replace(/[\\/:*?"<>|]/g, '').slice(0, 80)}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  } catch(e){ toast('No se pudo generar el Excel: ' + e.message, 'error'); }
+  finEspera();
+}
+
 const Demo = {
   datos(){
     let d = ls.get('dcd_demo2');
@@ -2843,6 +3597,13 @@ const Demo = {
     return cods.map((cod, i) => { const q = partesCodigo(cod); const e = ESCUELAS_DEFECTO.find(x => x[2] === q.prefijo);
       return { escuela: e ? e[0] : '', codigo: cod, nombre: `${temas[(i * 7) % temas.length]} ${objetos[i % objetos.length]}`, estado: i % 9 === 0 ? 'INACTIVO' : 'EN PRODUCCIÓN', horas: ['16','24','32'][i % 3], moneda: q.num < 600 ? 'Colones' : 'Dólares', nivel: ['Básico','Intermedio','Avanzado'][i % 3], desc:'' }; }); }
 };
+Object.assign(Demo, {
+  async programas(){ await sleep(200); return (Demo.datos().programas || []).map(p => JSON.parse(JSON.stringify(p))); },
+  async guardarPrograma(p){ await sleep(300); const d = Demo.datos(); d.programas = d.programas || [];
+    if(!p.id){ p.id = 'P-' + nuevoId().slice(2); p.fecha = fechaTexto(new Date()); p.correo = S.user.email; p.registradoPor = S.user.name; }
+    const i = d.programas.findIndex(x => x.id === p.id); const copia = JSON.parse(JSON.stringify(p)); if(i >= 0) d.programas[i] = copia; else d.programas.unshift(copia); Demo.guardar(d); return p; },
+  async maestraProgramas(){ return [{ escuela:'Ingeniería del Software', codigo:'APTEC1', nombre:'Técnico en Automatización de Pruebas de Software', tipo:'Técnico por Microciclos' }, { escuela:'Administración de Empresas', codigo:'SSCTEC', nombre:'Técnico en Auxiliar Contable Digital', tipo:'Técnico por Microciclos' }]; }
+});
 function conectarDemo(){
   const perfiles = { director:{ email:'directora.demo@ucenfotec.ac.cr', name:'Laura Directora', given:'Laura' }, docente:{ email:'ana.mora@ucenfotec.ac.cr', name:'Ana Mora', given:'Ana' },
     revisor:{ email:'revisora@ucenfotec.ac.cr', name:'Siony Revisora', given:'Siony' } };
