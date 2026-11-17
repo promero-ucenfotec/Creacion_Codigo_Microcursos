@@ -570,6 +570,19 @@ table.tabla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .ac-pie{font-size:11.5px;color:var(--tinta-3);padding:8px 12px;border-top:1px solid var(--linea);background:var(--suave)}
 .add-par{margin:4px 0 6px}
 .nivel-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;flex:none}
+.pcu-zona{display:flex;flex-direction:column;align-items:center;gap:6px;padding:30px 20px;border:2px dashed var(--linea-2);border-radius:var(--radio);background:var(--suave);cursor:pointer;text-align:center;transition:.15s}
+.pcu-zona:hover,.pcu-zona.sobre{border-color:var(--school);background:#fff}
+.pcu-zona .i{width:30px;height:30px;color:var(--school)}
+.pcu-zona b{font-size:15px}.pcu-zona span{font-size:12.5px;color:var(--tinta-3)}
+#pcu-filas{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.pcu-fila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:14px;align-items:start;padding:12px 14px;border:1px solid var(--linea);border-radius:12px;background:#fff}
+.pcu-arch{display:flex;gap:10px;align-items:center;min-width:0}.pcu-arch .i{color:var(--azul);flex:none}
+.pcu-arch span{min-width:0}.pcu-arch b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pcu-arch small{color:var(--tinta-3);font-size:11.5px}
+.pcu-curso input{width:100%;padding:9px 11px;border:1.5px solid var(--linea-2);border-radius:9px}
+.pcu-curso input:focus{outline:none;border-color:var(--azul2)}
+.pcu-est{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tinta-2);margin-top:5px}.pcu-est .i{width:13px;height:13px}
+.pcu-est.ok{color:var(--ok)}.pcu-est.av{color:var(--aviso)}.pcu-est.err{color:var(--error)}
+@media(max-width:700px){.pcu-fila{grid-template-columns:1fr auto}.pcu-curso{grid-column:1/-1;grid-row:2}}
 .pend-caja{background:#fff;border:1px solid var(--linea);border-left:4px solid var(--aviso);border-radius:var(--radio);padding:14px 16px;margin:0 0 26px;box-shadow:var(--sombra-suave)}
 .pend-cab{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}.pend-cab b{display:block;font-size:15px}.pend-cab span{font-size:13px;color:var(--tinta-2)}
 .pend-cab .i{color:var(--aviso);margin-top:2px}
@@ -769,7 +782,8 @@ const PARAMS = new URLSearchParams(location.search);
 const DEMO = PARAMS.has('demo');
 const SCOPE_HOJAS = 'https://www.googleapis.com/auth/spreadsheets';
 const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.compose';
-const SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', SCOPE_HOJAS, SCOPE_GMAIL];
+const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive';
+const SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', SCOPE_HOJAS, SCOPE_GMAIL, SCOPE_DRIVE];
 const LIB = {
   gis: 'https://accounts.google.com/gsi/client',
   gapi: 'https://apis.google.com/js/api.js',
@@ -1338,6 +1352,7 @@ const Real = {
     await G.append(`'${HOJA.equipo}'!A:G`, [[p.correo, p.nombre, p.escuela, p.rol, 'Sí', S.user.email, fechaTexto(new Date())]]);
     let error = '';
     if(avisar) await G.gmail(correoBienvenida(p)).catch(e => { error = e.message; });
+    if(typeof carpetaPCU === 'function' && carpetaPCU()) Real.compartirCarpeta(carpetaPCU(), [p.correo]).catch(e => console.warn('No se pudo dar acceso a la carpeta de programas', e));
     Real.bitacora(`Agregó ${({ Director:'dirección', Revisor:'revisión', Registrador:'docente', PowerCampus:'PowerCampus' })[p.rol]} a ${p.escuela}`, p.correo);
     return { compartido: !error, error };
   },
@@ -1417,8 +1432,9 @@ const ETQ = { Pendiente:'<span class="etiqueta pend">En revisión</span>', 'Con 
 Object.assign(Real, {
   async marcar(r, cambios){
     const fila = await Real.filaDe(r.id);
-    const data = Object.keys(cambios).filter(k => k === 'included' || Real.ex[k]).map(k => k === 'included'
+    const data = Object.keys(cambios).filter(k => k === 'included' || k === 'programa' || Real.ex[k]).map(k => k === 'included'
       ? { range:`'${CFG.HOJA_REGISTROS}'!A${fila}`, values:[[!!cambios[k]]] }
+      : k === 'programa' ? { range:`'${CFG.HOJA_REGISTROS}'!${letra(COL.programa)}${fila}`, values:[[String(cambios[k] || '')]] }
       : { range:`'${CFG.HOJA_REGISTROS}'!${letra(Real.ex[k])}${fila}`, values:[[String(cambios[k] == null ? '' : cambios[k])]] });
     await G.valores(data);
   },
@@ -1477,7 +1493,7 @@ Object.assign(Real, {
     const filas = (j.valueRanges[0] || {}).values || [];
     const h = (filas[0] || []).map(v => norm(String(v).split('\n')[0]));
     const c = k => h.findIndex(x => x.startsWith(k));
-    const ix = { escuela:c('escuela'), codigo:c('codigo'), nombre:c('nombre del curso'), estado:c('estado del curso'), horas:c('num. horas clase'), moneda:c('moneda'), nivel:c('nivel de complejidad'), desc:c('descripcion larga'), nombrePC:c('nombre en power campus'), creditos:c('num. creditos'), extra:c('num. horas extraclase'), total:c('num. total de horas'), reqInd:c('requisitos indispensables'), programas:c('programa(s)'), temas:h.findIndex(x => x === 'contenidos' || x.startsWith('contenidos')) };
+    const ix = { escuela:c('escuela'), codigo:c('codigo'), nombre:c('nombre del curso'), estado:c('estado del curso'), horas:c('num. horas clase'), moneda:c('moneda'), nivel:c('nivel de complejidad'), desc:c('descripcion larga'), nombrePC:c('nombre en power campus'), creditos:c('num. creditos'), extra:c('num. horas extraclase'), total:c('num. total de horas'), reqInd:c('requisitos indispensables'), programas:c('programa(s)'), word:c('[word] programa'), temas:h.findIndex(x => x === 'contenidos' || x.startsWith('contenidos')) };
     return filas.slice(1).filter(f => f[ix.codigo]).map(f => { const o = {}; Object.keys(ix).forEach(k => o[k] = ix[k] >= 0 ? String(f[ix[k]] == null ? '' : f[ix[k]]).trim() : ''); return o; });
   },
   async guardarClaves(hoja, pares){
@@ -1540,7 +1556,8 @@ function correoBienvenida(p){
 const G_MOCK = `<div class="g-mock"><span class="tag">Así se verá</span><div class="cab">Asignación de código quiere acceder a su Cuenta de Google</div>
   <div class="fila-g todo"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Seleccionar todo</span><span class="pista">← marque esta</span></div>
   <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ver, editar, crear y borrar todas sus hojas de cálculo de Google Sheets</span></div>
-  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Administrar borradores y enviar correos electrónicos</span></div></div>`;
+  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Administrar borradores y enviar correos electrónicos</span></div>
+  <div class="fila-g"><span class="caja-g"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ver, editar, crear y borrar todos sus archivos de Google Drive</span></div></div>`;
 function pantallaBienvenida(){
   const ya = !!ls.get(K.consentimiento);
   marco(`<h1>Asignación de código a microcursos</h1>
@@ -1561,7 +1578,7 @@ function pantallaRegreso(u){
   $('#btn-o').addEventListener('click', () => { ls.del(K.usuario); pantallaBienvenida(); });
 }
 function pantallaPermisos(f){
-  const n = { 'https://www.googleapis.com/auth/userinfo.email':['usuario','Ver su correo'], 'https://www.googleapis.com/auth/userinfo.profile':['usuario','Ver su nombre y foto'], [SCOPE_HOJAS]:['tabla','Ver y editar hojas de cálculo (solo se usan las de DCD)'], [SCOPE_GMAIL]:['correo','Enviar el aviso desde su correo'] };
+  const n = { 'https://www.googleapis.com/auth/userinfo.email':['usuario','Ver su correo'], 'https://www.googleapis.com/auth/userinfo.profile':['usuario','Ver su nombre y foto'], [SCOPE_HOJAS]:['tabla','Ver y editar hojas de cálculo (solo se usan las de DCD)'], [SCOPE_GMAIL]:['correo','Enviar el aviso desde su correo'], [SCOPE_DRIVE]:['carpeta','Subir los programas de curso a la carpeta de DCD'] };
   marco(`<h1>Faltan permisos</h1><p class="subt">En la ventana de Google es necesario <b>marcar todas las casillas</b>. Puede retirarlos cuando quiera desde su cuenta de Google.</p>
     <div class="permisos">${SCOPES.filter(s => s !== 'openid').map(s => `<div class="permiso ${f.includes(s) ? 'falta' : 'ok'}">${icon(f.includes(s) ? 'x' : 'check')}<div><b>${n[s][1]}</b>${f.includes(s) ? 'Pendiente' : 'Concedido'}</div></div>`).join('')}</div>
     <button class="btn-google" id="btn-r" style="margin-top:18px">${G_LOGO}Conceder los permisos</button>`);
@@ -1839,13 +1856,14 @@ function irInicio(){
   const u = S.user, r = rolEf(), bor = ls.get(claveBorrador());
   const ops = [['a-uno', 'hoja', 'Registrar un curso', 'Complete el formulario paso a paso. Toma unos 5 minutos.', 'Comenzar'],
     ['a-varios', 'excel', 'Registrar varios cursos', 'Descargue la plantilla de Excel, complétela y súbala aquí.', 'Cargar Excel']];
-  if(r === 'director') ops.push(['a-prog', 'carpeta', 'Técnico o programa', 'Arme el plan de estudios y compruebe el nivel del Marco de Cualificaciones.', 'Crear'], ['a-eq', 'equipo', 'Docentes', 'Dé permiso a los profesores de su escuela para registrar cursos.', 'Gestionar']);
+  if(r === 'director') ops.push(['a-prog', 'carpeta', 'Técnico o programa', 'Arme el plan de estudios y compruebe el nivel del Marco de Cualificaciones.', 'Crear']);
+  ops.push(['a-pcu', 'ficha', 'Programas de curso', r === 'director' ? 'Suba los programas en Word o asígneselos a sus docentes.' : 'Suba el Word de sus programas de curso para revisión.', 'Abrir']);
   app.innerHTML = `<main class="pantalla"><div class="angosto">
     <div class="saludo">${avatarHTML(u)}<div><div class="sobre-titulo"><i class="punto"></i>${esc(S.school ? S.school.nombre : '')}</div><h1>${saludoHora()}, ${esc(u.given || u.name.split(' ')[0])}</h1></div></div>
     ${bor && bor.curso && bor.curso.nombre ? `<div class="borrador"><span>Tiene un registro sin terminar: <b>${esc(bor.curso.nombre)}</b></span><span class="esp"></span><button class="btn btn-sm btn-texto" id="b-d">Descartar</button><button class="btn btn-sm btn-primario" id="b-c">Continuar</button></div>` : ''}
     <div id="pend-prog"></div>
     <div class="acciones grandes" style="--n:${ops.length}">${ops.map(o => `<button class="accion grande" id="${o[0]}"><div class="ico">${icon(o[1])}</div><div><b>${o[2]}</b><span>${o[3]}</span></div><span class="ir">${o[4]} ${icon('flecha-der')}</span></button>`).join('')}</div>
-    <p style="margin:-20px 0 30px;text-align:right"><button class="btn btn-sm btn-texto" id="a-json" style="font-size:12px;color:var(--tinta-3)">{ } Importar cursos con IA (JSON)</button></p>
+    <p style="margin:-20px 0 30px;text-align:right">${r === 'director' ? `<button class="btn btn-sm btn-texto" id="a-eq" style="font-size:12px;color:var(--tinta-3)">${icon('equipo')}Docentes de la escuela</button>` : ''}<button class="btn btn-sm btn-texto" id="a-json" style="font-size:12px;color:var(--tinta-3)">{ } Importar cursos con IA (JSON)</button></p>
     <div class="${r === 'director' ? 'dos-col' : ''}">
       <section><div class="seccion-tit"><h2>${r === 'director' ? 'Solicitudes de la escuela' : 'Mis registros'}</h2><button class="btn btn-sm btn-texto" id="r-mis" title="Actualizar">${icon('recargar')}Actualizar</button></div>
         <div id="mis"><div class="vacio">Cargando…</div></div></section>
@@ -1860,6 +1878,7 @@ function irInicio(){
   $('#a-uno').addEventListener('click', () => abrirAsistente());
   $('#a-varios').addEventListener('click', abrirMasivo);
   if($('#a-eq')) $('#a-eq').addEventListener('click', pantallaEquipo);
+  $('#a-pcu').addEventListener('click', pantallaPCursos);
   if($('#a-json')) $('#a-json').addEventListener('click', dialogoJSON);
   if($('#b-c')) $('#b-c').addEventListener('click', () => abrirAsistente(bor));
   if($('#b-d')) $('#b-d').addEventListener('click', () => { ls.del(claveBorrador()); irInicio(); });
@@ -1913,7 +1932,9 @@ async function inicioDCD(){
     pintarNav();
     const n = f => todos.filter(f).length;
     const pend = n(x => estadoDe(x) === 'Pendiente'), obs = n(x => estadoDe(x) === 'Con observaciones'), notif = n(x => ['Aprobado', 'Aviso en borrador'].includes(estadoDe(x)));
-    const items = [[pend, pend === 1 ? 'curso por revisar' : 'cursos por revisar', 'pend', ''], [obs, 'con observaciones', 'pend', 'obs'], [notif, 'por avisar a la escuela', 'notif', '']].filter(x => x[0]);
+    let npc = 0; try { npc = (await cargarPCursos(forzar)).filter(x => x.estado === 'En revisión').length; } catch(e){}
+    if(!$('#resumen')) return;
+    const items = [[pend, pend === 1 ? 'curso por revisar' : 'cursos por revisar', 'pend', ''], [obs, 'con observaciones', 'pend', 'obs'], [notif, 'por avisar a la escuela', 'notif', ''], [npc, npc === 1 ? 'programa de curso por revisar' : 'programas de curso por revisar', 'pcur', '']].filter(x => x[0]);
     $('#resumen').innerHTML = items.length ? items.map(x => `<button class="dcd-dato ${x[3]}" data-t="${x[2]}"><b>${x[0]}</b><span>${x[1]}</span></button>`).join('')
       : `<div class="dcd-ok">${icon('check')}<span><b>Todo al día.</b> No hay cursos pendientes de revisión ni de aviso.</span></div>`;
     $$('#resumen [data-t]').forEach(b => b.addEventListener('click', () => pantallaRevision(b.dataset.t)));
@@ -2136,7 +2157,10 @@ function pantallaExito(){
     <div class="lista">${R.registros.map(r => `<div class="fila"><div class="txt"><b>${esc(r.nombre)}</b><span class="sec"><i class="punto" style="background:${esc(colorDe(r.escuela))}"></i>${esc(r.escuela)} · ${esc(r.id)}</span></div></div>`).join('')}</div>
     <div class="alerta ${R.ec.ok ? 'ok' : 'aviso'}" style="max-width:520px;margin:16px auto 0;text-align:left">${icon(R.ec.ok ? 'correo' : 'alerta')}<div>${R.ec.ok ? 'Aviso enviado desde su correo.' : `El registro quedó guardado, pero no se pudo enviar el aviso. <a href="${mailto}">Enviarlo manualmente</a>.`}</div></div>
     <div class="botones"><button class="btn btn-primario btn-lg" id="pdf">${icon('pdf')}Descargar comprobante</button><button class="btn btn-suave btn-lg" id="otro">Registrar otro</button><button class="btn btn-texto btn-lg" id="ini">Volver al inicio</button></div>
+    ${carpetaPCU() ? `<p class="nota" style="margin-top:18px">¿Ya tiene el programa en Word? <button class="btn btn-sm btn-texto" id="sub-pcu">${icon('subir')}Subir el programa de curso</button><br>El código se le pondrá solo al nombre del archivo cuando Desarrollo Curricular apruebe el curso.</p>` : ''}
   </div></div></main>`;
+  if($('#sub-pcu')) $('#sub-pcu').addEventListener('click', async () => { await cargarTodos(true).catch(() => {}); const r = R.registros[0]; const reg = (S.todos || []).find(x => x.id === r.id);
+    subirPCursos(R.registros.length === 1 && reg ? { cand:{ clave:'r:' + reg.id, codigo:'', curso:reg.nombre, escuela:reg.escuela, registroId:reg.id, enRevision:true } } : {}); });
   $('#pdf').addEventListener('click', () => generarPDF(R.registros, R.fecha));
   $('#otro').addEventListener('click', () => abrirAsistente());
   $('#ini').addEventListener('click', irInicio);
@@ -2682,11 +2706,11 @@ function pantallaRevision(tab){
     <div id="aviso-maestra"></div>
     <div class="herr"><div class="segmento" id="tabs">
       <button data-t="pend">Pendientes <span id="c-pend"></span></button><button data-t="notif">Por notificar <span id="c-notif"></span></button>
-      <button data-t="prog">Programas <span id="c-prog"></span></button><button data-t="hist">Historial</button><button data-t="correos">${icon('correo')}Correos</button></div>
+      <button data-t="prog">Técnicos <span id="c-prog"></span></button><button data-t="pcur">Programas de curso <span id="c-pcur"></span></button><button data-t="hist">Historial</button><button data-t="correos">${icon('correo')}Correos</button></div>
       <span class="esp"></span><select class="filtro" id="f-esc"><option value="">Todas las escuelas</option>${S.boot.schools.map(s => `<option ${R.escuela === s.nombre ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('')}</select></div>
     <div id="vista"><div class="vacio">Cargando…</div></div></main>`;
   $('#v').addEventListener('click', irInicio);
-  $('#rec').addEventListener('click', async () => { S.todos = null; MAESTRA = null; pantallaRevision(); });
+  $('#rec').addEventListener('click', async () => { S.todos = null; MAESTRA = null; PCUS = null; PROGS = null; pantallaRevision(); });
   $$('#tabs button').forEach(b => { b.classList.toggle('sel', b.dataset.t === R.tab); b.addEventListener('click', () => { R.tab = b.dataset.t; R.sel = new Set(); pantallaRevision(); }); });
   $('#f-esc').addEventListener('change', e => { R.escuela = e.target.value; R.sel = new Set(); fondoPC(fondoBase()); pintarRevision(); });
   pintarRevision();
@@ -2710,7 +2734,9 @@ async function pintarRevision(){
   if(R.tab === 'ficha') return fichaRevision(cont, pend);
   if(R.tab === 'notif') return colaAvisos(cont, notif, borr);
   if(R.tab === 'correos') return formCorreos(cont);
+  if(R.tab !== 'pcur') cargarPCursos(false).then(l => { const c = $('#c-pcur'); if(c) c.textContent = `(${l.filter(x => x.estado === 'En revisión').length})`; }).catch(() => {});
   if(R.tab === 'prog') return tablaProgramasRev(cont);
+  if(R.tab === 'pcur') return tablaPCURev(cont);
   const hist = todos.filter(r => r.estado && porEsc(r)).sort((a, b) => (b.fechaRevision || b.fecha) > (a.fechaRevision || a.fecha) ? 1 : -1);
   if(!hist.length){ cont.innerHTML = '<div class="vacio">Aún no hay cursos revisados con esta herramienta.</div>'; return; }
   paginador(cont, hist, { clave:'hist', porPag:10, buscar:textoReg, ph:'Buscar curso, código, escuela o persona', uno:'curso revisado', varios:'cursos revisados',
@@ -2826,6 +2852,7 @@ async function aprobarCursos(cursos, items){
     for(const r of cursos){
       const mios = items.filter(i => i.r === r).map(i => ({ codigo:i.codigo, moneda:i.moneda }));
       Object.assign(r, await Almacen().aprobar(r, mios, estadoPM)); hechos++;
+      try { const n = await enlazarCodigoPCU(r, mios[0].codigo); if(n) toast(`El código ${mios[0].codigo} quedó en el nombre de su programa de curso.`, '', 5000); } catch(e){ console.warn('No se pudo poner el código en el programa de curso', e); }
       mios.forEach(i => MAESTRA.push(i.codigo));
     }
     finEspera(); S.rev.sel = new Set();
@@ -3034,7 +3061,9 @@ function pantallaConfig(){
       <label class="check-legal"><input type="checkbox" id="o-solo" ${siNo(cfg.SOLO_PERSONAS_REGISTRADAS || 'Sí') ? 'checked' : ''}><span>Solo usan la herramienta las personas asignadas a una escuela</span></label>
       <label class="check-legal" style="margin-top:-6px"><input type="checkbox" id="o-otras" ${siNo(cfg.PERMITIR_OTRAS_ESCUELAS) ? 'checked' : ''}><span>Permitir registrar cursos de otras escuelas</span></label>
       <div class="pie-form"><span></span><button class="btn btn-primario" id="g-gen">Guardar</button></div></div>
+    ${tarjetaCarpetaPCU()}
   </div></main>`;
+  activarCarpetaPCU();
   $('#v').addEventListener('click', irInicio);
   $('#ir-eq').addEventListener('click', pantallaEquipo);
   const pintarEsc = () => {
@@ -3357,13 +3386,18 @@ async function pintarPendientesProg(){
   const corrC = (S.todos || []).filter(r => estadoDe(r) === 'Con observaciones' && (r.correo === S.user.email || gestE.includes(r.escuela)));
   const cajaCorr = corrP.length || corrC.length ? `<div class="pend-caja corr"><div class="pend-cab">${icon('lapiz')}<div><b>Solicitudes por corregir</b><span>Desarrollo Curricular dejó observaciones. Solo debe corregir la parte indicada.</span></div></div>
     <div class="lista">${corrC.map((r, i) => `<div class="fila"><div class="txt"><b>${esc(r.nombre)}</b><span class="sec">Curso · ${esc(r.escuela)}</span></div><button class="btn btn-sm btn-primario" data-cc="${i}">Corregir ${icon('flecha-der')}</button></div>`).join('')}${corrP.map((p, i) => `<div class="fila"><div class="txt"><b>${esc(p.nombre)}</b><span class="sec">${esc(tipoTxt(p))} · ${esc(p.escuela)}</span></div><button class="btn btn-sm btn-primario" data-cp="${i}">Corregir ${icon('flecha-der')}</button></div>`).join('')}</div></div>` : '';
+  let pcu = []; try { const l = await cargarPCursos(false); pcu = l.filter(x => (!S.school || x.escuela === S.school.nombre) && ((x.estado === 'Por hacer' && x.asignadoA === S.user.email) || (x.estado === 'Con observaciones' && x.correo === S.user.email))); } catch(e){}
+  if(!$('#pend-prog')) return;
+  const cajaPCU = pcu.length ? `<div class="pend-caja"><div class="pend-cab">${icon('ficha')}<div><b>Programas de curso por subir</b><span>Se los asignó la dirección o volvieron con observaciones.</span></div></div>
+    <div class="lista">${pcu.map((x, i) => `<div class="fila"><div class="txt"><b>${esc(x.codigo ? x.codigo + ' · ' : '')}${esc(x.curso)}</b><span class="sec">${x.estado === 'Por hacer' ? 'Asignado por ' + esc(nombreDe(x.asignadoPor)) : 'Con observaciones'}</span></div><button class="btn btn-sm btn-primario" data-pu="${i}">${icon('subir')}Subir</button></div>`).join('')}</div></div>` : '';
   const aqui = todos.filter(x => !S.school || x.p.escuela === S.school.nombre), otras = [...new Set(todos.filter(x => !aqui.includes(x)).map(x => x.p.escuela))];
   const bindCorr = () => { $$('[data-cc]', cont).forEach(b => b.addEventListener('click', () => corregirCurso(corrC[+b.dataset.cc]))); $$('[data-cp]', cont).forEach(b => b.addEventListener('click', () => { const p = corrP[+b.dataset.cp]; (p.editables || []).length ? corregirPrograma(p) : abrirPrograma(p); })); };
-  if(!todos.length){ cont.innerHTML = cajaCorr; bindCorr(); return; }
-  cont.innerHTML = cajaCorr + `<div class="pend-caja"><div class="pend-cab">${icon('lista')}<div><b>Cursos por completar</b><span>${aqui.length ? `Son parte de un técnico o programa. Ya traen el nombre y las horas.` : ''}${otras.length ? ` Tiene otros en ${otras.map(esc).join(', ')}: cambie de escuela arriba para verlos.` : ''}</span></div></div>
+  const bindPU = () => $$('[data-pu]', cont).forEach(b => b.addEventListener('click', () => subirPCursos({ pcu:pcu[+b.dataset.pu] })));
+  if(!todos.length){ cont.innerHTML = cajaCorr + cajaPCU; bindCorr(); bindPU(); return; }
+  cont.innerHTML = cajaCorr + cajaPCU + `<div class="pend-caja"><div class="pend-cab">${icon('lista')}<div><b>Cursos por completar</b><span>${aqui.length ? `Son parte de un técnico o programa. Ya traen el nombre y las horas.` : ''}${otras.length ? ` Tiene otros en ${otras.map(esc).join(', ')}: cambie de escuela arriba para verlos.` : ''}</span></div></div>
     ${aqui.length ? `<div class="lista">${aqui.map((x, i) => `<div class="fila"><div class="txt"><b>${esc(x.it.nombre)}</b><span class="sec">${esc(x.p.nombre)} · periodo ${esc(x.it.periodo)} · ${esc(x.it.horas)} h lectivas</span></div><button class="btn btn-sm btn-primario" data-pc="${i}">Completar ${icon('flecha-der')}</button></div>`).join('')}</div>` : ''}</div>`;
   $$('[data-pc]', cont).forEach(b => b.addEventListener('click', () => completarPendiente(aqui[+b.dataset.pc].p, aqui[+b.dataset.pc].it)));
-  bindCorr();
+  bindCorr(); bindPU();
 }
 function completarPendiente(p, it){
   const c = cursoNuevo(p.escuela);
@@ -3826,6 +3860,7 @@ function verPrograma(p, rev){
   const acc = [{ html:`${icon('excel')}DCD-34`, clase:'btn-suave', accion: async () => { await excelDCD34(p); return false; } }];
   if(rev && p.estado === 'Aprobado' && !p.publicado) acc.push({ html:`${icon('subir')}Pasar a la Plantilla Maestra`, clase:'btn-primario', accion: () => { setTimeout(() => pasarAPlantilla(p), 30); return true; } });
   if(rev && !(p.estado === 'Aprobado' && p.publicado)) acc.unshift({ html:`${icon('basura')}Eliminar`, clase:'btn-peligro-suave', accion: () => { setTimeout(() => eliminarProgramaRev(p), 30); return true; } });
+  if(rev && !(p.estado === 'Aprobado' && p.publicado)) acc.push({ html:`${icon('lapiz')}Editar`, clase:'btn-suave', accion: () => { corregirPrograma(p, true); return true; } });
   if(rev && p.estado !== 'Aprobado') acc.push({ html:`${icon('correo')}Observación`, clase:'btn-suave', accion: () => { setTimeout(() => dialogoObsPrograma(p), 30); return true; } },
     { html:`${icon('check')}Aprobar`, clase:'btn-primario', accion: () => { setTimeout(() => dialogoAprobarPrograma(p), 30); return true; } });
   if(!rev && ['En construcción', 'Con observaciones'].includes(p.estado) && (p.correo === S.user.email || escuelasQueGestiono().includes(p.escuela))) acc.push({ html:`${icon('lapiz')}${p.estado === 'Con observaciones' ? 'Corregir' : 'Editar'}`, clase:'btn-primario', accion: () => { p.estado === 'Con observaciones' && (p.editables || []).length ? corregirPrograma(p) : abrirPrograma(p); return true; } });
@@ -3833,27 +3868,30 @@ function verPrograma(p, rev){
 }
 
 /* ---------- Corrección de un técnico: solo las partes que habilitó Desarrollo Curricular ---------- */
-function corregirPrograma(p0){
-  const p = JSON.parse(JSON.stringify(p0)), partes = p.editables || [];
+function corregirPrograma(p0, revisor){
+  const p = JSON.parse(JSON.stringify(p0)), partes = revisor ? PROG_PASO_CAMPOS[0].concat(['plan'], PROG_PASO_CAMPOS[2]) : (p.editables || []);
   S.prog = { p, paso:1, max:3, correccion:true };
   const campos = partes.filter(k => PROG_CAMPOS[k]), conPlan = partes.includes('plan');
   activa('prog'); window.scrollTo(0, 0); fondoPC(colorDe(p.escuela));
   app.innerHTML = `<main class="pantalla"><div class="${conPlan ? 'ancho-plan' : 'angosto'}"><button class="volver" id="v">${icon('flecha-izq')}Inicio</button>
-    <div class="sobre-titulo" style="margin-bottom:6px"><i class="punto" style="background:${esc(colorDe(p.escuela))}"></i>Corrección · ${esc(tipoTxt(p))}</div><h1 style="margin:0 0 16px">${esc(p.nombre)}</h1>
-    <div class="alerta aviso" style="margin-bottom:16px">${icon('alerta')}<div><b>Observaciones de Desarrollo Curricular</b><br>${esc(p.observacion || '').replace(/\n/g, '<br>')}</div></div>
-    <div class="tarjeta form-tarjeta"><h2>Corrija ${partes.length === 1 ? 'esta parte' : 'estas partes'}</h2><p class="intro">Solo puede editar lo que Desarrollo Curricular habilitó. El resto se conserva igual.</p>
+    <div class="sobre-titulo" style="margin-bottom:6px"><i class="punto" style="background:${esc(colorDe(p.escuela))}"></i>${revisor ? 'Edición de Desarrollo Curricular' : 'Corrección'} · ${esc(tipoTxt(p))}</div><h1 style="margin:0 0 16px">${esc(p.nombre)}</h1>
+    ${revisor ? '' : `<div class="alerta aviso" style="margin-bottom:16px">${icon('alerta')}<div><b>Observaciones de Desarrollo Curricular</b><br>${esc(p.observacion || '').replace(/\n/g, '<br>')}</div></div>`}
+    <div class="tarjeta form-tarjeta"><h2>${revisor ? 'Editar el ' + esc(tipoTxt(p).toLowerCase()) : `Corrija ${partes.length === 1 ? 'esta parte' : 'estas partes'}`}</h2><p class="intro">${revisor ? `Los cambios se guardan sin cambiar el estado de la solicitud (${esc(p.estado)}) ni avisar a la escuela.` : 'Solo puede editar lo que Desarrollo Curricular habilitó. El resto se conserva igual.'}</p>
       <div id="campos"></div>
       ${conPlan ? `<div style="margin-top:${campos.length ? 26 : 0}px"><h3 class="sub-h">Plan de estudios</h3><div id="medidor"></div><div id="periodos"></div><button class="btn btn-suave" id="add-per" style="margin-top:14px">${icon('mas')}Agregar periodo</button></div>` : ''}
-      <details class="resto"><summary>Ver el resto del técnico</summary>${tablaPlan(p)}</details>
-      ${bloqueEnvio()}<div class="pie-form"><button class="btn btn-suave" id="cancelar">Cancelar</button><span class="esp"></span><button class="btn btn-primario btn-lg" id="reenviar">Reenviar a revisión ${icon('flecha-der')}</button></div></div></div></main>`;
+      ${revisor ? '' : `<details class="resto"><summary>Ver el resto del técnico</summary>${tablaPlan(p)}</details>`}
+      ${revisor ? '' : bloqueEnvio()}<div class="pie-form"><button class="btn btn-suave" id="cancelar">Cancelar</button><span class="esp"></span><button class="btn btn-primario btn-lg" id="reenviar">${revisor ? `${icon('check')}Guardar cambios` : `Reenviar a revisión ${icon('flecha-der')}`}</button></div></div></div></main>`;
   const cont = $('#campos'); campos.forEach(k => cont.appendChild(crearCampo(k, PROG_CAMPOS[k], p, () => {}, {})));
   if(conPlan){ asegurarCatalogos().then(() => pintarPlan()); pintarPlan();
     $('#add-per').addEventListener('click', () => { const max = Math.max(0, ...p.plan.map(it => (+it.periodo || 1) + (+it.dura || 1) - 1)); p.plan.push(itemNuevo(max + 1)); pintarPlan(); }); }
-  $('#v').addEventListener('click', irInicio); $('#cancelar').addEventListener('click', irInicio);
+  const salir = () => { S.prog = null; revisor ? pantallaRevision('prog') : irInicio(); };
+  $('#v').addEventListener('click', salir); $('#cancelar').addEventListener('click', salir);
   $('#reenviar').addEventListener('click', async () => {
     const e = validarProg(p, campos); if(Object.keys(e).length){ mostrarErrores(cont, e); return; }
     if(conPlan){ p.plan = p.plan.filter(it => String(it.nombre || '').trim()); if(!p.plan.length){ toast('El plan necesita al menos un curso.', 'error'); return; }
-      const ev = evaluarNivel(p, statsPlan(p)); if(ev.estado === 'falta' || ev.estado === 'excede'){ toast(ev.msj, 'error', 6000); return; } }
+      const ev = evaluarNivel(p, statsPlan(p)); if(!revisor && (ev.estado === 'falta' || ev.estado === 'excede')){ toast(ev.msj, 'error', 6000); return; }
+      if(revisor && (ev.estado === 'falta' || ev.estado === 'excede') && !await confirmar('Horas fuera del rango', esc(ev.msj) + ' ¿Guardar de todos modos?', 'Guardar')) return; }
+    if(revisor){ if(!(await guardarProg(p, false))) return; PROGS = null; S.prog = null; toast('Cambios guardados.'); pantallaRevision('prog'); return; }
     const antes = new Set((p0.plan || []).map(x => x.uid)), nuevosCorr = p.plan.filter(it => it.nuevo && !it.registroId && !antes.has(it.uid) && String(it.nombre || '').trim());
     if(conPlan && nuevosCorr.length){ const ok = await dialogoDestinoCursos(p, nuevosCorr); if(!ok) return; }
     p.estado = 'Enviado'; p.editables = []; p.observacion = '[Corregido ' + fechaTexto(new Date()) + '] ' + (p.observacion || '');
@@ -4153,7 +4191,7 @@ const Demo = {
   guardar(d){ ls.set('dcd_demo2', d); },
   async cargar(){ await sleep(300); const d = Demo.datos(); if(!d.equipo.some(m => m.rol === 'PowerCampus')){ d.equipo.push({ correo:'powercampus.demo@ucenfotec.ac.cr', nombre:'Mario PowerCampus', escuela:'Todas', rol:'PowerCampus', activo:true, agregadoPor:'' }); Demo.guardar(d); } const correos = {}; CORREOS_DEFECTO.forEach(f => correos[f[0]] = f[1]); Object.assign(correos, d.correos || {});
     correos.AVISO_PARA_FIJOS = correos.AVISO_PARA_FIJOS || 'vicerrectoria@ejemplo.com';
-    return { preparada:true, cfg: Object.assign({ ADMINISTRADORES:'usuario.demo@ucenfotec.ac.cr', NOTIFICAR_A:'', COPIA_AL_USUARIO_POR_DEFECTO:'Sí', PERMITIR_OTRAS_ESCUELAS:'No', SOLO_PERSONAS_REGISTRADAS:'Sí' }, d.cfg || {}),
+    return { preparada:true, cfg: Object.assign({ CARPETA_PROGRAMAS:'https://drive.google.com/drive/folders/demo-carpeta-programas', ADMINISTRADORES:'usuario.demo@ucenfotec.ac.cr', NOTIFICAR_A:'', COPIA_AL_USUARIO_POR_DEFECTO:'Sí', PERMITIR_OTRAS_ESCUELAS:'No', SOLO_PERSONAS_REGISTRADAS:'Sí' }, d.cfg || {}),
     schools: d.escuelas || ESCUELAS_DEFECTO.map(e => ({ nombre:e[0], color:e[1], prefijo:e[2], correos:['direccion.' + e[2].toLowerCase() + '@ejemplo.com'], activa:true })), equipo: d.equipo, correos }; },
   async preparar(){},
   async todos(){ await sleep(200); return Demo.datos().registros; },
@@ -4180,7 +4218,7 @@ const Demo = {
   async maestraCursos(){ const cods = await Demo.maestraCodigos(); const temas = ['Fundamentos de','Introducción a','Taller de','Gestión de','Análisis de','Bases de','Diseño de','Herramientas de','Laboratorio de','Ética en','Modelado de','Programación en','Redes y','Ciencia de','Ultra práctica en','Visualización de','Kotlin para','Java para','Python para','Zero Trust en','Nube en','Usabilidad en','Robótica en','Ofimática en','Ventas en','Química de'];
     const objetos = ['datos','software','seguridad','proyectos','redes','la nube','procesos','servicios'];
     return cods.map((cod, i) => { const q = partesCodigo(cod); const e = ESCUELAS_DEFECTO.find(x => x[2] === q.prefijo);
-      return { escuela: e ? e[0] : '', codigo: cod, nombre: `${temas[(i * 7) % temas.length]} ${objetos[i % objetos.length]}`, estado: i % 9 === 0 ? 'INACTIVO' : 'EN PRODUCCIÓN', horas: ['16','24','32'][i % 3], moneda: q.num < 600 ? 'Colones' : 'Dólares', nivel: ['Básico','Intermedio','Avanzado'][i % 3], desc:'', reqInd:'Sin requisitos', programas:'', temas:`1. Conceptos básicos de ${objetos[i % objetos.length]}, 2. Herramientas y técnicas principales, 3. Aplicación en casos prácticos, 4. Buenas prácticas y tendencias actuales` }; }); },
+      return { escuela: e ? e[0] : '', codigo: cod, nombre: `${temas[(i * 7) % temas.length]} ${objetos[i % objetos.length]}`, estado: i % 9 === 0 ? 'INACTIVO' : 'EN PRODUCCIÓN', horas: ['16','24','32'][i % 3], moneda: q.num < 600 ? 'Colones' : 'Dólares', nivel: ['Básico','Intermedio','Avanzado'][i % 3], desc:'', reqInd:'Sin requisitos', programas:'', word:(Demo.datos().maestraWord || {})[cod] || (i % 3 ? 'https://drive.google.com/file/d/demo/view' : ''), temas:`1. Conceptos básicos de ${objetos[i % objetos.length]}, 2. Herramientas y técnicas principales, 3. Aplicación en casos prácticos, 4. Buenas prácticas y tendencias actuales` }; }); },
   async maestraPlanes(){ return { 'SOFT-301':[{ codigo:'APTEC1', nombre:'Técnico en Automatización de Pruebas de Software', tipo:'Técnico por Microciclos' }], 'SOFT-302':[{ codigo:'APTEC1', nombre:'Técnico en Automatización de Pruebas de Software', tipo:'Técnico por Microciclos' }] }; }
 };
 Object.assign(Demo, {
@@ -4192,6 +4230,508 @@ Object.assign(Demo, {
   async publicarPrograma(p){ await sleep(500); const d = Demo.datos(); d.programasPM = (d.programasPM || []).concat([{ codigo:p.codigoAsignado, nombre:p.nombre }]); Demo.guardar(d); return { fila:1477 }; },
   async maestraProgramas(){ return [{ escuela:'Ingeniería del Software', codigo:'APTEC1', nombre:'Técnico en Automatización de Pruebas de Software', tipo:'Técnico por Microciclos' }, { escuela:'Administración de Empresas', codigo:'SSCTEC', nombre:'Técnico en Auxiliar Contable Digital', tipo:'Técnico por Microciclos' }]; }
 });
+/* =========================================================================
+   PROGRAMAS DE CURSO (archivos Word en una carpeta de Google Drive)
+   Hoja «Programas de curso» (en el archivo de registros): una fila por programa,
+   ya sea subido o asignado por la dirección a un docente.
+   ========================================================================= */
+HOJA.pcursos = 'Programas de curso';
+const PCU_COLS = [['id','ID'],['fecha','Fecha'],['escuela','Escuela'],['codigo','Código'],['curso','Curso'],['registroId','ID de registro'],['estado','Estado'],
+  ['asignadoA','Asignado a'],['asignadoPor','Asignado por'],['mensaje','Mensaje de la dirección'],['fechaAsig','Fecha de asignación'],['archivo','Archivo'],['enlace','Enlace'],
+  ['archivoId','ID del archivo'],['subidoPor','Subido por'],['correo','Correo'],['fechaSubida','Fecha de subida'],['version','Versión'],['revisadoPor','Revisado por'],['fechaRevision','Fecha de revisión'],['observacion','Observaciones']];
+const ESTADOS_PCU = { 'Por hacer':'<span class="etiqueta pend">Por hacer</span>', 'En revisión':'<span class="etiqueta rol">En revisión DCD</span>',
+  'Con observaciones':'<span class="etiqueta error">Con observaciones</span>', Revisado:'<span class="etiqueta ok">Revisado</span>' };
+const etqPCU = x => ESTADOS_PCU[x.estado] || esc(x.estado);
+function idCarpeta(v){ const s = String(v || '').trim(); const m = s.match(/folders\/([\w-]{10,})/) || s.match(/[?&]id=([\w-]{10,})/) || s.match(/^([\w-]{10,})$/); return m ? m[1] : ''; }
+const carpetaPCU = () => idCarpeta(S.boot && S.boot.cfg.CARPETA_PROGRAMAS);
+const extDe = n => (String(n || '').match(/\.[a-z0-9]{2,5}$/i) || [''])[0].toLowerCase();
+const nombreArchivoPCU = (x, ext) => `${x.codigo ? x.codigo.toUpperCase() : '[Sin código]'} ${String(x.curso || '').trim()}${ext || ''}`.replace(/[\\/:*?"<>|]/g, '-');
+const pcuAFila = x => PCU_COLS.map(([k]) => x[k] == null ? '' : x[k]);
+function filaAPcu(f, fila){ const o = { fila }; PCU_COLS.forEach(([k], i) => o[k] = f[i] == null ? '' : String(f[i]).trim()); o.correo = o.correo.toLowerCase(); o.asignadoA = o.asignadoA.toLowerCase(); return o; }
+function errDrive(e){
+  const d = String(e.detalle || e.message || '');
+  if(e.status === 403 && /scope|insufficient/i.test(d)) return new Error('Falta el permiso de Google Drive. Cierre sesión y vuelva a entrar aceptando todos los permisos.');
+  if(e.status === 403 || e.status === 404) return new Error('Su cuenta no tiene acceso a la carpeta de programas de curso. Pida a Desarrollo Curricular que le dé acceso.');
+  return e;
+}
+
+Object.assign(Real, {
+  async asegurarPCursos(){
+    if(Real.pcuOk) return;
+    let hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.pcursos);
+    if(!hoja){
+      await G.batch([{ addSheet:{ properties:{ title:HOJA.pcursos, gridProperties:{ frozenRowCount:1, columnCount:PCU_COLS.length } } } }]);
+      Real.meta = await G.meta(); hoja = Real.meta.sheets.find(s => s.properties.title === HOJA.pcursos);
+      await G.update(`'${HOJA.pcursos}'!A1:${letra(PCU_COLS.length)}1`, [PCU_COLS.map(c => c[1])]);
+      await G.batch([{ repeatCell:{ range:{ sheetId:hoja.properties.sheetId, startRowIndex:0, endRowIndex:1 }, cell:{ userEnteredFormat:{ backgroundColor:{ red:.086, green:.29, blue:.596 }, textFormat:{ bold:true, foregroundColor:{ red:1, green:1, blue:1 } } } }, fields:'userEnteredFormat(backgroundColor,textFormat)' } }]);
+    }
+    Real.pcuOk = hoja.properties.sheetId;
+  },
+  async pcursos(){
+    await Real.asegurarPCursos();
+    const [filas] = await G.batchGet([`'${HOJA.pcursos}'!A2:${letra(PCU_COLS.length)}`]);
+    return filas.map((f, i) => filaAPcu(f, i + 2)).filter(x => x.id);
+  },
+  async guardarPCurso(x){
+    await Real.asegurarPCursos();
+    if(!x.id){ x.id = 'PC-' + nuevoId().slice(2); x.fecha = fechaTexto(new Date()); }
+    const fila = pcuAFila(x);
+    const [ids] = await G.batchGet([`'${HOJA.pcursos}'!A2:A`]);
+    const i = ids.findIndex(f => String(f[0] || '') === x.id);
+    if(i >= 0) await G.update(`'${HOJA.pcursos}'!A${i + 2}:${letra(PCU_COLS.length)}${i + 2}`, [fila]);
+    else await G.batch([
+      { insertDimension:{ range:{ sheetId:Real.pcuOk, dimension:'ROWS', startIndex:1, endIndex:2 }, inheritFromBefore:false } },
+      { updateCells:{ start:{ sheetId:Real.pcuOk, rowIndex:1, columnIndex:0 }, rows:[{ values:fila.map(v => v === '' ? {} : typeof v === 'number' ? { userEnteredValue:{ numberValue:v } } : { userEnteredValue:{ stringValue:String(v) } }) }], fields:'userEnteredValue' } }]);
+    return x;
+  },
+  async eliminarPCurso(x){
+    await Real.asegurarPCursos();
+    const [ids] = await G.batchGet([`'${HOJA.pcursos}'!A2:A`]);
+    const i = ids.findIndex(f => String(f[0] || '') === x.id); if(i < 0) return;
+    await G.batch([{ deleteDimension:{ range:{ sheetId:Real.pcuOk, dimension:'ROWS', startIndex:i + 1, endIndex:i + 2 } } }]);
+    Real.bitacora('Quitó una asignación de programa de curso', `${x.id} ${x.curso}`);
+  },
+  async carpetaInfo(id){
+    try { return await G.drive('?supportsAllDrives=true&fields=id,name,mimeType,driveId,capabilities(canAddChildren,canShare)', {}, id); }
+    catch(e){ throw errDrive(e); }
+  },
+  /** Sube un archivo a la carpeta. Con «reemplazar» (ID de un archivo) se sube una versión nueva del mismo archivo: el enlace no cambia. */
+  async subirArchivo(file, nombre, carpeta, reemplazar){
+    await asegurarSesion();
+    const url = `https://www.googleapis.com/upload/drive/v3/files${reemplazar ? '/' + reemplazar : ''}?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink`;
+    const hacer = () => { const fd = new FormData();
+      fd.append('metadata', new Blob([JSON.stringify(reemplazar ? { name:nombre } : { name:nombre, parents:[carpeta] })], { type:'application/json' })); fd.append('file', file);
+      return fetch(url, { method: reemplazar ? 'PATCH' : 'POST', headers:{ Authorization:'Bearer ' + S.token }, body:fd }); };
+    let r; try { r = await hacer(); } catch(e){ throw new Error('Sin conexión. Revise su internet e intente de nuevo.'); }
+    if(r.status === 401){ await asegurarSesion(true); r = await hacer(); }
+    const j = await r.json().catch(() => ({}));
+    if(!r.ok){ const e = new Error((j.error && j.error.message) || 'Error ' + r.status); e.status = r.status; e.detalle = e.message; throw errDrive(e); }
+    return j;
+  },
+  async renombrarArchivo(id, nombre){ try { await G.drive('?supportsAllDrives=true&fields=id,name', { method:'PATCH', body:JSON.stringify({ name:nombre }) }, id); } catch(e){ throw errDrive(e); } },
+  /** Da permiso de edición en la carpeta a cada correo que todavía no lo tenga (sin enviarles el correo de Google). */
+  async compartirCarpeta(carpeta, correos){
+    let ya = [], token = '';
+    try {
+      do { const j = await G.drive(`/permissions?supportsAllDrives=true&pageSize=100&fields=nextPageToken,permissions(emailAddress,role,type)${token ? '&pageToken=' + token : ''}`, {}, carpeta);
+        ya = ya.concat(j.permissions || []); token = j.nextPageToken || ''; } while(token);
+    } catch(e){ throw errDrive(e); }
+    const tienen = new Set(ya.filter(p => p.emailAddress && p.role !== 'reader' && p.role !== 'commenter').map(p => p.emailAddress.toLowerCase()));
+    const out = { nuevos:[], ya:0, errores:[] };
+    for(const c of [...new Set(correos.map(x => String(x).toLowerCase().trim()).filter(correoValido))]){
+      if(tienen.has(c)){ out.ya++; continue; }
+      try { await G.drive('/permissions?supportsAllDrives=true&sendNotificationEmail=false', { method:'POST', body:JSON.stringify({ type:'user', role:'writer', emailAddress:c }) }, carpeta); out.nuevos.push(c); }
+      catch(e){ out.errores.push(c); }
+    }
+    if(out.nuevos.length) Real.bitacora('Dio acceso a la carpeta de programas de curso', out.nuevos.join(', '));
+    return out;
+  },
+  /** Escribe el enlace del programa en la columna «[Word] Programa» de la Plantilla Maestra. */
+  async maestraEnlacePrograma(codigo, url){
+    await Real.maestraMeta();
+    const j = await G.req(`${G.baseM()}/values:batchGet?ranges=${encodeURIComponent(`'${CFG.HOJA_MAESTRA}'!1:1`)}&ranges=${encodeURIComponent(`'${CFG.HOJA_MAESTRA}'!B1:B`)}&valueRenderOption=FORMATTED_VALUE`);
+    const h = (((j.valueRanges[0] || {}).values || [])[0] || []).map(v => norm(String(v).split('\n')[0]));
+    const ci = h.findIndex(x => x.startsWith('[word] programa'));
+    if(ci < 0) throw new Error('No se encontró la columna «[Word] Programa» en la Plantilla Maestra.');
+    const cods = ((j.valueRanges[1] || {}).values || []).map(f => String(f[0] || '').trim().toUpperCase());
+    const fi = cods.indexOf(String(codigo).toUpperCase());
+    if(fi < 1) throw new Error(`No se encontró el código ${codigo} en la Plantilla Maestra.`);
+    await G.req(`${G.baseM()}/values/${encodeURIComponent(`'${CFG.HOJA_MAESTRA}'!${letra(ci + 1)}${fi + 1}`)}?valueInputOption=RAW`, { method:'PUT', body:JSON.stringify({ values:[[url]] }) });
+    Real.bitacora('Puso el enlace del programa en la Plantilla Maestra', `${codigo} → ${url}`);
+  }
+});
+
+/* ---------- Datos ---------- */
+let PCUS = null;
+async function cargarPCursos(forzar){ if(forzar || !PCUS) PCUS = await Almacen().pcursos(); return PCUS; }
+/** Cursos a los que se les puede subir programa: los registrados en la herramienta y los de la Plantilla Maestra de la escuela. */
+function candidatosPCU(escuela){
+  const sch = S.boot.schools.find(s => s.nombre === escuela) || {}, out = [], vistos = new Set(), doc = rolEf() === 'docente';
+  (S.todos || []).filter(r => r.escuela === escuela && estadoDe(r) !== 'Eliminado' && (!doc || r.correo === S.user.email)).forEach(r => {
+    const cod = String(r.codigoAsignado || '').split(/\s*,\s*/)[0].toUpperCase(); if(cod) vistos.add(cod);
+    out.push({ clave:'r:' + r.id, codigo:cod, curso:r.nombre, escuela, registroId:r.id, horas:r.horas === 'Otro' ? r.horasOtro : r.horas, nivel:r.nivel, desc:r.descripcion, temas:r.contenidos, tienePrograma:!!r.programa, enRevision:!cod });
+  });
+  (PM_CACHE || []).filter(c => c.escuela === escuela || (partesCodigo(c.codigo) || {}).prefijo === sch.prefijo).forEach(c => {
+    const cod = c.codigo.toUpperCase(); if(vistos.has(cod)) return; vistos.add(cod);
+    out.push({ clave:'m:' + cod, codigo:cod, curso:c.nombre, escuela, horas:c.horas, nivel:c.nivel, desc:c.desc, temas:c.temas, tienePrograma:!!c.word, inactivo:/inactiv/i.test(c.estado) });
+  });
+  return out;
+}
+const etiquetaCand = c => `${c.codigo || 'Sin código'} · ${c.curso}`;
+function pcuDe(c){ return (PCUS || []).find(x => (c.registroId && x.registroId === c.registroId) || (c.codigo && x.codigo && x.codigo.toUpperCase() === c.codigo.toUpperCase())) || null; }
+const PCU_VACIAS = new Set(['de','del','la','las','los','el','en','para','con','por','una','uno','programa','curso','version','final','prl','prl1','prl2','prl3','docx','copia']);
+/** Reconoce el curso por el código en el nombre del archivo o, si no, por las palabras del nombre. */
+function emparejarPCU(nombre, cands){
+  const base = String(nombre).replace(/\.[^.]+$/, ''), sin = norm(base).toUpperCase();
+  const m = sin.match(/\b([A-Z]{2,6}(?:-[A-Z]{1,4})?)[-_ ]?(\d{2,4})\b/);
+  if(m){ const cod = m[1] + '-' + m[2]; const c = cands.find(x => x.codigo && x.codigo.replace(/\s/g, '') === cod); if(c) return c; }
+  const tk = s => new Set(norm(s).replace(/\(.*?\)/g, ' ').split(/[^a-z0-9ñ]+/).filter(w => w.length > 2 && !PCU_VACIAS.has(w)));
+  const a = tk(base); if(!a.size) return null;
+  let mejor = null, pm = 0;
+  cands.forEach(c => { const b = tk(c.curso); if(!b.size) return; let k = 0; b.forEach(w => { if(a.has(w)) k++; });
+    const s = (k / b.size) * 0.7 + (k / a.size) * 0.3 + (c.tienePrograma ? 0 : 0.01);
+    if(k >= Math.min(2, b.size) && s > pm){ pm = s; mejor = c; } });
+  return pm >= 0.6 ? mejor : null;
+}
+
+/* ---------- Pantalla principal (dirección y docentes) ---------- */
+async function pantallaPCursos(){
+  activa('pcursos'); window.scrollTo(0, 0); fondoPC(fondoBase());
+  const dir = rolEf() === 'director', esc_ = S.school ? S.school.nombre : '';
+  app.innerHTML = `<main class="pantalla"><div class="angosto"><button class="volver" id="v">${icon('flecha-izq')}Inicio</button>
+    <div class="cabecera"><div><div class="sobre-titulo"><i class="punto"></i>${esc(esc_)}</div><h1>Programas de curso</h1><p>Suba los programas en Word: quedan en la carpeta de Desarrollo Curricular y se envían a revisión.${dir ? ' También puede asignarle a un docente los que faltan.' : ''}</p></div>
+      <button class="btn btn-primario" id="subir">${icon('subir')}Subir programas</button></div>
+    <div id="pcu-aviso"></div><div id="pcu-pend"></div>
+    ${dir ? `<section style="margin-bottom:30px"><div class="seccion-tit"><h2>Cursos sin programa</h2></div><p class="nota" style="margin:-6px 0 12px">Cursos de la escuela que todavía no tienen el programa en la Plantilla Maestra ni en la carpeta.</p><div id="pcu-sin"><div class="vacio">Cargando…</div></div></section>` : ''}
+    <section><div class="seccion-tit"><h2>Seguimiento</h2><button class="btn btn-sm btn-texto" id="r-pcu">${icon('recargar')}Actualizar</button></div><div id="pcu-seg"><div class="vacio">Cargando…</div></div></section>
+  </div></main>`;
+  $('#v').addEventListener('click', irInicio);
+  $('#subir').addEventListener('click', () => subirPCursos());
+  $('#r-pcu').addEventListener('click', () => { PCUS = null; PM_CACHE = null; pintarPCursos(true); });
+  if(!carpetaPCU()){ $('#pcu-aviso').innerHTML = `<div class="alerta aviso" style="margin-bottom:18px">${icon('alerta')}<div>Desarrollo Curricular todavía no configuró la carpeta de programas de curso. Por ahora no se pueden subir archivos.</div></div>`; $('#subir').disabled = true; }
+  pintarPCursos(false);
+}
+async function pintarPCursos(forzar){
+  if(!$('#pcu-seg')) return;
+  try { await Promise.all([cargarPCursos(forzar), cargarTodos(forzar), PM_CACHE ? null : Almacen().maestraCursos().then(x => PM_CACHE = x).catch(() => { PM_CACHE = []; })]); }
+  catch(e){ $('#pcu-seg').innerHTML = `<div class="vacio">${esc(e.message)}</div>`; return; }
+  if(!$('#pcu-seg')) return;
+  const yo = S.user.email, esc_ = S.school ? S.school.nombre : '', dir = rolEf() === 'director', gest = escuelasQueGestiono();
+  // Pendientes propios: asignados a mí o devueltos con observaciones
+  const pend = PCUS.filter(x => x.escuela === esc_ && ((x.estado === 'Por hacer' && x.asignadoA === yo) || (x.estado === 'Con observaciones' && (x.correo === yo || (dir && !x.correo && x.asignadoA === yo)))));
+  $('#pcu-pend').innerHTML = pend.length ? `<div class="pend-caja"><div class="pend-cab">${icon('lista')}<div><b>Sus pendientes</b><span>Programas que le asignaron o que volvieron con observaciones.</span></div></div>
+    <div class="lista">${pend.map((x, i) => `<div class="fila"><div class="txt"><b>${esc(etiquetaCand(x))}</b><span class="sec">${x.estado === 'Por hacer' ? 'Asignado por ' + esc(nombreDe(x.asignadoPor)) + (x.mensaje ? ' · «' + esc(x.mensaje.slice(0, 90)) + (x.mensaje.length > 90 ? '…' : '') + '»' : '') : 'Observaciones: ' + esc(x.observacion.slice(0, 110))}</span></div>
+      <button class="btn btn-sm btn-suave" data-vp="${i}">Ver</button><button class="btn btn-sm btn-primario" data-sp="${i}" ${carpetaPCU() ? '' : 'disabled'}>${icon('subir')}Subir</button></div>`).join('')}</div></div>` : '';
+  $$('[data-sp]').forEach(b => b.addEventListener('click', () => subirPCursos({ pcu:pend[+b.dataset.sp] })));
+  $$('[data-vp]').forEach(b => b.addEventListener('click', () => verPCU(pend[+b.dataset.vp], false)));
+  // Cursos sin programa (solo dirección)
+  if(dir && $('#pcu-sin')){
+    const sin = candidatosPCU(esc_).filter(c => !c.tienePrograma && !c.inactivo && !pcuDe(c)).sort((a, b) => (a.enRevision === b.enRevision ? 0 : a.enRevision ? -1 : 1) || a.curso.localeCompare(b.curso, 'es'));
+    paginador($('#pcu-sin'), sin, { clave:'pcusin', porPag:6, buscar:c => c.codigo + ' ' + c.curso, ph:'Buscar por código o nombre', uno:'curso sin programa', varios:'cursos sin programa', vacio:'Todos los cursos de la escuela tienen programa. ¡Excelente!',
+      filtros:[['', 'Todos', () => true], ['nue', 'Registrados aquí', c => !!c.registroId], ['pm', 'Plantilla Maestra', c => !c.registroId]],
+      render:(vis, el) => { el.innerHTML = `<div class="lista">${vis.map((c, i) => `<div class="fila"><span class="cod">${esc(c.codigo || 'Nuevo')}</span><div class="txt"><b>${esc(c.curso)}</b><span class="sec">${c.registroId ? (c.enRevision ? 'Registrado · el código se asigna al aprobarlo' : 'Registrado con esta herramienta') : 'Plantilla Maestra'}${c.horas ? ' · ' + esc(c.horas) + ' h' : ''}</span></div>
+          <button class="btn btn-sm btn-suave" data-as="${i}">${icon('usuario')}Asignar</button><button class="btn btn-sm btn-primario" data-su="${i}" ${carpetaPCU() ? '' : 'disabled'}>${icon('subir')}Subir</button></div>`).join('')}</div>`;
+        $$('[data-as]', el).forEach(b => b.addEventListener('click', () => dialogoAsignarPCU(vis[+b.dataset.as])));
+        $$('[data-su]', el).forEach(b => b.addEventListener('click', () => subirPCursos({ cand:vis[+b.dataset.su] }))); } });
+  }
+  // Seguimiento
+  const seg = PCUS.filter(x => x.escuela === esc_ && (gest.includes(x.escuela) || x.correo === yo || x.asignadoA === yo));
+  paginador($('#pcu-seg'), seg, { clave:'pcuseg', porPag:8, buscar:x => [x.codigo, x.curso, x.subidoPor, x.asignadoA].join(' '), ph:'Buscar curso, código o persona', uno:'programa', varios:'programas',
+    vacio: dir ? 'Aún no hay programas subidos ni asignados.' : 'Aún no ha subido programas de curso.',
+    filtros:[['', 'Todos', () => true], ['ph', 'Por hacer', x => x.estado === 'Por hacer'], ['rev', 'En revisión', x => x.estado === 'En revisión'], ['obs', 'Con observaciones', x => x.estado === 'Con observaciones'], ['ok', 'Revisados', x => x.estado === 'Revisado']],
+    render:(vis, el) => { el.innerHTML = `<div class="pc-items">${vis.map((x, i) => `<button class="pc-item" data-i="${i}" style="--e:${esc(colorDe(x.escuela))}"><i></i><span class="pc-item-t"><b>${esc(x.curso)}</b><small>${esc(x.codigo || 'Sin código')} · ${x.estado === 'Por hacer' ? 'asignado a ' + esc(nombreDe(x.asignadoA)) : esc(x.subidoPor || '') + (x.fechaSubida ? ' · ' + esc(String(x.fechaSubida).split(' ')[0]) : '')}</small></span>${etqPCU(x)}</button>`).join('')}</div>`;
+      $$('.pc-item', el).forEach(b => b.addEventListener('click', () => verPCU(vis[+b.dataset.i], false))); } });
+}
+const nombreDe = c => { const m = S.boot.equipo.find(x => x.correo === c); return m && m.nombre ? m.nombre : c === S.user.email ? 'usted' : (c || ''); };
+
+/* ---------- Subir uno o varios archivos ---------- */
+async function subirPCursos(pre){
+  pre = pre || {};
+  const carpeta = carpetaPCU(); if(!carpeta){ toast('Desarrollo Curricular todavía no configuró la carpeta de programas.', 'error'); return; }
+  activa('pcursos'); window.scrollTo(0, 0);
+  const esc_ = pre.pcu ? pre.pcu.escuela : S.school ? S.school.nombre : '';
+  espera('Preparando…');
+  try { await Promise.all([cargarPCursos(false), cargarTodos(false), PM_CACHE ? null : Almacen().maestraCursos().then(x => PM_CACHE = x).catch(() => { PM_CACHE = []; })]); } catch(e){}
+  finEspera();
+  const cands = candidatosPCU(esc_);
+  const fijo = pre.pcu ? Object.assign({ clave:'p:' + pre.pcu.id, codigo:pre.pcu.codigo, curso:pre.pcu.curso, escuela:esc_, registroId:pre.pcu.registroId }, { pcuId:pre.pcu.id })
+    : pre.cand || null;
+  if(fijo && !cands.some(c => c.clave === fijo.clave)) cands.unshift(fijo);
+  const filas = [];   // { file, cand, texto }
+  app.innerHTML = `<main class="pantalla"><div class="angosto"><button class="volver" id="v">${icon('flecha-izq')}Programas de curso</button>
+    <div class="cabecera"><div><div class="sobre-titulo"><i class="punto"></i>${esc(esc_)}</div><h1>${fijo ? 'Subir el programa de «' + esc(fijo.curso) + '»' : 'Subir programas de curso'}</h1>
+      <p>${fijo ? 'Elija el archivo de Word del programa.' : 'Puede subir varios a la vez. La herramienta reconoce el curso por el código o el nombre del archivo; revise que cada uno quede bien asociado.'}</p></div></div>
+    ${fijo && pre.pcu && pre.pcu.estado === 'Con observaciones' ? `<div class="alerta aviso" style="margin-bottom:16px">${icon('alerta')}<div><b>Observaciones de Desarrollo Curricular</b><br>${esc(pre.pcu.observacion).replace(/\n/g, '<br>')}</div></div>` : ''}
+    ${fijo && pre.pcu && pre.pcu.mensaje && pre.pcu.estado === 'Por hacer' ? `<div class="alerta" style="margin-bottom:16px">${icon('correo')}<div><b>Mensaje de ${esc(nombreDe(pre.pcu.asignadoPor))}</b><br>${esc(pre.pcu.mensaje).replace(/\n/g, '<br>')}</div></div>` : ''}
+    <div class="tarjeta form-tarjeta">
+      <label class="pcu-zona" id="zona"><input type="file" id="f-in" ${fijo ? '' : 'multiple'} accept=".doc,.docx,.odt,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/pdf" hidden>
+        ${icon('subir')}<b>Arrastre aquí ${fijo ? 'el archivo' : 'los archivos'}</b><span>o haga clic para elegir${fijo ? 'lo' : 'los'} · Word o PDF</span></label>
+      <div id="pcu-filas"></div>
+      <datalist id="pcu-dl">${cands.map(c => `<option value="${esc(etiquetaCand(c))}">${c.tienePrograma ? 'Ya tiene programa' : c.enRevision ? 'Registrado, en revisión' : ''}</option>`).join('')}</datalist>
+      <div class="bloque-tit" style="margin-top:22px">Aviso por correo</div>
+      <label class="check-legal"><input type="checkbox" id="pcu-av" checked><span>Avisar a Revisión y a Desarrollo Curricular</span></label>
+      <div id="pcu-dest">${campoCorreos('pcu-to', 'Para', S.boot.to.length ? S.boot.to : [])}</div>
+      <label class="check-legal" style="margin-top:10px"><input type="checkbox" id="pcu-cc" ${siNo(S.boot.cfg.COPIA_AL_USUARIO_POR_DEFECTO || 'Sí') ? 'checked' : ''}><span>Enviarme una copia</span></label>
+      <div class="pie-form"><button class="btn btn-suave" id="cancelar">Cancelar</button><span class="esp"></span><button class="btn btn-primario btn-lg" id="enviar" disabled>${icon('subir')}Subir y enviar</button></div>
+    </div></div></main>`;
+  activarCorreos(app);
+  const volver = () => pantallaPCursos();
+  $('#v').addEventListener('click', volver); $('#cancelar').addEventListener('click', volver);
+  $('#pcu-av').addEventListener('change', e => { $('#pcu-dest').hidden = !e.target.checked; });
+  const candDeTexto = t => { const q = norm(t); return cands.find(c => norm(etiquetaCand(c)) === q) || null; };
+  const pintar = () => {
+    $('#pcu-filas').innerHTML = filas.map((f, i) => { const c = f.cand;
+      const est = c ? (c.tienePrograma && !c.pcuId ? '<span class="pcu-est av">Este curso ya tiene programa: se agregará uno nuevo</span>' : (pcuDe(c) && pcuDe(c).archivoId) || c.pcuId ? '<span class="pcu-est">Reemplaza la versión anterior (el enlace se mantiene)</span>' : !c.codigo ? '<span class="pcu-est">Sin código: se agrega solo cuando Desarrollo Curricular lo apruebe</span>' : '<span class="pcu-est ok">' + icon('check') + 'Curso reconocido</span>')
+        : f.texto.trim() ? '<span class="pcu-est av">Curso que no está en la lista: se enviará sin código</span>' : '<span class="pcu-est err">Elija el curso de este programa</span>';
+      return `<div class="pcu-fila"><div class="pcu-arch">${icon('hoja')}<span><b title="${esc(f.file.name)}">${esc(f.file.name)}</b><small>${f.file.size < 1048576 ? Math.max(1, Math.round(f.file.size / 1024)) + ' KB' : (f.file.size / 1048576).toFixed(1) + ' MB'}</small></span></div>
+        <div class="pcu-curso"><input type="text" list="pcu-dl" data-i="${i}" value="${esc(f.texto)}" placeholder="Busque el curso por código o nombre" ${fijo ? 'readonly' : ''}>${est}</div>
+        <button class="btn-icono" data-q="${i}" title="Quitar">${icon('x')}</button></div>`; }).join('');
+    $$('#pcu-filas input').forEach(inp => inp.addEventListener('change', () => { const f = filas[+inp.dataset.i]; f.texto = inp.value; f.cand = candDeTexto(inp.value); pintar(); }));
+    $$('#pcu-filas [data-q]').forEach(b => b.addEventListener('click', () => { filas.splice(+b.dataset.q, 1); pintar(); }));
+    $('#enviar').disabled = !filas.length || filas.some(f => !f.cand && !f.texto.trim());
+    $('#zona').hidden = !!fijo && filas.length > 0;
+  };
+  const agregar = lista => {
+    const malos = [];
+    Array.from(lista).forEach(file => {
+      if(!/\.(docx?|odt|pdf)$/i.test(file.name)){ malos.push(file.name); return; }
+      if(file.size > 50 * 1048576){ toast(`«${file.name}» pesa más de 50 MB.`, 'error'); return; }
+      const cand = fijo || emparejarPCU(file.name, cands.filter(c => !filas.some(f => f.cand === c)));
+      if(fijo) filas.length = 0;
+      filas.push({ file, cand, texto: cand ? etiquetaCand(cand) : '' });
+    });
+    if(malos.length) toast('Solo se aceptan archivos de Word o PDF: ' + malos.join(', '), 'error', 6000);
+    pintar();
+  };
+  const zona = $('#zona');
+  $('#f-in').addEventListener('change', e => { agregar(e.target.files); e.target.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add('sobre'); }));
+  ['dragleave', 'drop'].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove('sobre'); }));
+  zona.addEventListener('drop', e => agregar(e.dataTransfer.files));
+  pintar();
+  $('#enviar').addEventListener('click', async () => {
+    const avisar = $('#pcu-av').checked, to = listaCorreos($('#pcu-to').value);
+    if(avisar && !to.length){ toast('Agregue al menos un correo para el aviso.', 'error'); return; }
+    const hechos = []; let error = null;
+    for(let i = 0; i < filas.length; i++){
+      const f = filas[i], c = f.cand || { codigo:'', curso:f.texto.trim(), escuela:esc_ };
+      espera(filas.length > 1 ? `Subiendo ${i + 1} de ${filas.length}…` : 'Subiendo el programa…');
+      try {
+        const x = (c.pcuId && PCUS.find(y => y.id === c.pcuId)) || (f.cand && pcuDe(c)) || { escuela:esc_, estado:'' };
+        const reg = c.registroId ? (S.todos || []).find(r => r.id === c.registroId) : null;
+        const codigo = String(c.codigo || (reg && reg.codigoAsignado ? reg.codigoAsignado.split(/\s*,\s*/)[0] : '') || '').toUpperCase();
+        const nombre = nombreArchivoPCU({ codigo, curso:c.curso }, extDe(f.file.name));
+        const j = await Almacen().subirArchivo(f.file, nombre, carpeta, x.archivoId && x.estado !== 'Revisado' ? x.archivoId : null);
+        Object.assign(x, { escuela:esc_, codigo, curso:c.curso, registroId:c.registroId || x.registroId || '', estado:'En revisión', archivo:j.name || nombre, enlace:j.webViewLink || `https://drive.google.com/file/d/${j.id}/view`,
+          archivoId:j.id, subidoPor:S.user.name, correo:S.user.email, fechaSubida:fechaTexto(new Date()), version:String((Number(x.version) || 0) + 1) });
+        await Almacen().guardarPCurso(x);
+        if(reg){ try { await Almacen().marcar(reg, { programa:x.enlace }); reg.programa = x.enlace; } catch(e){ console.warn('No se pudo anotar el enlace en el registro', e); } }
+        hechos.push(x);
+      } catch(e){ error = e; break; }
+    }
+    PCUS = null;
+    let ec = null;
+    if(hechos.length && avisar){
+      espera('Enviando el aviso…'); const correo = correoPCU(hechos, to, $('#pcu-cc').checked);
+      try { await Almacen().enviarCorreo(correo); ec = { ok:true, correo }; } catch(e){ ec = { ok:false, correo, error:e.message }; }
+    }
+    finEspera();
+    if(error && !hechos.length){ modal({ titulo:'No se pudo subir', cuerpo:`<div class="alerta error">${icon('alerta')}<div>${esc(error.message)}</div></div>`, acciones:[{ texto:'Entendido', clase:'btn-primario' }] }); return; }
+    pantallaExitoPCU(hechos, ec, error, filas.length);
+  });
+}
+function correoPCU(lista, to, copia){
+  const url = location.href.split('?')[0].split('#')[0], e = lista[0].escuela;
+  const html = `<div style="background:#f6f7f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e8ee;border-radius:12px;overflow:hidden">
+    <div style="padding:20px 26px;border-bottom:2px solid ${colorDe(e)}"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a92a3">Universidad CENFOTEC · Desarrollo Curricular y Docente</div><div style="font-size:18px;font-weight:700;color:#164a98;margin-top:4px">${lista.length === 1 ? 'Programa de curso para revisión' : lista.length + ' programas de curso para revisión'}</div></div>
+    <div style="padding:22px 26px;font-size:14px;line-height:1.6;color:#141b2b"><p style="margin-top:0">${esc(S.user.name)} (${esc(S.user.email)}) subió ${lista.length === 1 ? 'un programa de curso' : lista.length + ' programas de curso'} de la escuela de ${esc(e)}:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px">${lista.map(x => `<tr><td style="padding:9px 0;border-bottom:1px solid #eef0f4"><b>${esc(x.codigo || 'Sin código')}</b> · ${esc(x.curso)}${Number(x.version) > 1 ? ` <span style="color:#8a92a3">(versión ${esc(x.version)})</span>` : ''}</td><td style="padding:9px 0;border-bottom:1px solid #eef0f4;text-align:right"><a href="${esc(x.enlace)}" style="color:#006aea;font-weight:600;text-decoration:none">Abrir documento →</a></td></tr>`).join('')}</table>
+    <p style="margin:22px 0 4px"><a href="${esc(url)}" style="background:#006aea;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:14px">Revisar en la herramienta</a></p></div></div></div>`;
+  const cc = S.boot.cc.slice(); if(copia && !to.includes(S.user.email) && !cc.includes(S.user.email)) cc.push(S.user.email);
+  return { to, cc, subject:`${lista.length === 1 ? 'Programa de curso' : lista.length + ' programas de curso'} para revisión · ${e}${lista.length === 1 ? ' · ' + (lista[0].codigo ? lista[0].codigo + ' ' : '') + lista[0].curso : ''}`, html };
+}
+function pantallaExitoPCU(hechos, ec, error, total){
+  window.scrollTo(0, 0);
+  app.innerHTML = `<main class="pantalla"><div class="angosto"><div class="tarjeta exito"><div class="circulo"><svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <h1>${hechos.length === 1 ? 'Programa enviado' : hechos.length + ' programas enviados'}</h1><p>Quedaron en la carpeta de Desarrollo Curricular y en revisión.</p>
+    ${error ? `<div class="alerta aviso" style="text-align:left;margin:12px auto 0;max-width:560px">${icon('alerta')}<div>Se subieron ${hechos.length} de ${total}. El siguiente falló: ${esc(error.message)}</div></div>` : ''}
+    ${ec && ec.ok ? `<p class="nota" style="margin-top:-6px">${icon('correo')} Aviso enviado a ${esc(ec.correo.to.join(', '))}${ec.correo.cc.length ? ' (copia: ' + esc(ec.correo.cc.join(', ')) + ')' : ''}.</p>` : ec ? `<div class="alerta aviso" style="text-align:left;margin:12px auto 0;max-width:560px">${icon('alerta')}<div>Los archivos quedaron guardados, pero el aviso no se pudo enviar${ec.error ? ': ' + esc(ec.error) : ''}. <button class="btn btn-sm btn-suave" id="re-aviso" style="margin-left:6px">Reintentar aviso</button></div></div>` : ''}
+    <div class="lista" style="text-align:left;max-width:560px;margin:18px auto 0">${hechos.map(x => `<div class="fila"><span class="cod">${esc(x.codigo || 'Nuevo')}</span><div class="txt"><b>${esc(x.curso)}</b><span class="sec">${esc(x.archivo)}</span></div><a class="btn btn-sm btn-suave" href="${esc(x.enlace)}" target="_blank" rel="noopener">${icon('externo')}Abrir</a></div>`).join('')}</div>
+    <div class="botones"><button class="btn btn-suave btn-lg" id="otro">Subir otro</button><button class="btn btn-primario btn-lg" id="ini">Volver al inicio</button></div></div></div></main>`;
+  if($('#re-aviso')) $('#re-aviso').addEventListener('click', async () => { espera('Enviando el aviso…'); try { await Almacen().enviarCorreo(ec.correo); finEspera(); toast('Aviso enviado.'); pantallaExitoPCU(hechos, { ok:true, correo:ec.correo }, error, total); } catch(e){ finEspera(); toast(e.message, 'error', 6000); } });
+  $('#otro').addEventListener('click', () => subirPCursos());
+  $('#ini').addEventListener('click', irInicio);
+}
+
+/* ---------- La dirección asigna un programa a un docente ---------- */
+function dialogoAsignarPCU(c){
+  const esc_ = c.escuela;
+  const docentes = S.boot.equipo.filter(m => m.activo && m.escuela === esc_ && !ROL_SIN_ESC(m.rol) && m.correo !== S.user.email).filter((m, i, a) => a.findIndex(x => x.correo === m.correo) === i);
+  const z = document.createElement('div');
+  z.innerHTML = `<div class="meta-ficha" style="margin-top:0"><span><b>${esc(c.codigo || 'Sin código')}</b></span><span>${esc(c.curso)}</span>${c.horas ? `<span>${esc(c.horas)} h</span>` : ''}</div>
+    <div class="campo"><label for="as-doc">Docente</label><select id="as-doc"><option value="">— Elegir —</option>${docentes.map(d => `<option value="${esc(d.correo)}">${esc(d.nombre || d.correo)}</option>`).join('')}<option value="otro">Otra persona…</option></select></div>
+    <div id="as-otro" hidden><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="campo" style="margin-top:0"><label for="as-mail">Correo</label><input type="email" id="as-mail" placeholder="nombre@ucenfotec.ac.cr"></div><div class="campo" style="margin-top:0"><label for="as-nom">Nombre</label><input type="text" id="as-nom"></div></div>
+      <p class="nota" style="margin:-4px 0 0">Se le dará acceso a la herramienta como docente de ${esc(esc_)}.</p></div>
+    <div class="campo"><label for="as-msj">Mensaje para el docente <span class="opc">(opcional)</span></label><textarea id="as-msj" rows="4" placeholder="Ej. Necesito que este curso se enfoque en la práctica con casos reales de la industria."></textarea></div>
+    <label class="check-req" style="margin-top:12px"><input type="checkbox" id="as-av" checked><span>Enviarle un correo con el mensaje y la información del curso (temas, horas y descripción)</span></label>`;
+  $('#as-doc', z).addEventListener('change', e => { $('#as-otro', z).hidden = e.target.value !== 'otro'; });
+  modal({ titulo:'Asignar programa de curso', cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('check')}Asignar`, clase:'btn-primario', accion: async () => {
+    let correo = $('#as-doc', z).value, nombre = '';
+    if(correo === 'otro'){ correo = String($('#as-mail', z).value).toLowerCase().trim(); nombre = $('#as-nom', z).value.trim(); if(!correoValido(correo)){ toast('Escriba un correo válido.', 'error'); return false; } if(!nombre){ toast('Escriba el nombre del docente.', 'error'); return false; } }
+    if(!correo){ toast('Elija el docente.', 'error'); return false; }
+    const msj = $('#as-msj', z).value.trim(), avisar = $('#as-av', z).checked;
+    espera('Asignando…');
+    try {
+      if(!S.boot.equipo.some(m => m.correo === correo && m.escuela === esc_)){
+        const p = { correo, nombre: nombre || correo, escuela:esc_, rol:'Registrador' };
+        await Almacen().agregarPersona(p, false); S.boot.equipo.push(Object.assign({ activo:true }, p));
+      } else if(!nombre) nombre = nombreDe(correo);
+      const x = { escuela:esc_, codigo:c.codigo || '', curso:c.curso, registroId:c.registroId || '', estado:'Por hacer', asignadoA:correo, asignadoPor:S.user.email, mensaje:msj, fechaAsig:fechaTexto(new Date()) };
+      await Almacen().guardarPCurso(x); PCUS = null;
+      if(carpetaPCU()) Almacen().compartirCarpeta(carpetaPCU(), [correo]).catch(e => console.warn('No se pudo dar acceso a la carpeta', e));
+      let enviado = false;
+      if(avisar){ try { await Almacen().enviarCorreo(correoAsigPCU(c, correo, nombre, msj)); enviado = true; } catch(e){ toast('Se asignó, pero no se pudo enviar el correo: ' + e.message, 'error', 7000); } }
+      finEspera(); toast(`Programa asignado a ${nombre || correo}${enviado ? '. Se le avisó por correo.' : '.'}`, '', 5000); pintarPCursos(true); return true;
+    } catch(e){ finEspera(); toast(e.message, 'error', 6000); return false; }
+  } }] });
+}
+function correoAsigPCU(c, correo, nombre, msj){
+  const url = location.href.split('?')[0].split('#')[0];
+  const temas = String(c.temas || '').trim(), fila = (k, v) => v ? `<tr><td style="padding:7px 12px 7px 0;color:#5d6b85;vertical-align:top;white-space:nowrap">${k}</td><td style="padding:7px 0">${v}</td></tr>` : '';
+  const html = `<div style="background:#f6f7f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e8ee;border-radius:12px;overflow:hidden">
+    <div style="padding:20px 26px;border-bottom:2px solid ${colorDe(c.escuela)}"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a92a3">Universidad CENFOTEC · ${esc(c.escuela)}</div><div style="font-size:18px;font-weight:700;color:#164a98;margin-top:4px">Programa de curso por elaborar</div></div>
+    <div style="padding:22px 26px;font-size:14px;line-height:1.6;color:#141b2b"><p style="margin-top:0">${saludoHora()}${nombre ? ', ' + esc(String(nombre).split(' ')[0]) : ''}:</p>
+    <p>${esc(S.user.name)} le asignó la elaboración del programa del curso <b>${esc(c.codigo ? c.codigo + ' ' : '')}${esc(c.curso)}</b>.</p>
+    ${msj ? `<div style="background:#f3f7ff;border-left:4px solid #164a98;border-radius:6px;padding:12px 16px;margin:16px 0"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#164a98;margin-bottom:4px">Indicaciones</div>${esc(msj).replace(/\n/g, '<br>')}</div>` : ''}
+    <table style="font-size:13.5px;border-collapse:collapse;margin:8px 0">${fila('Código', esc(c.codigo || 'Por asignar'))}${fila('Horas', c.horas ? esc(c.horas) + ' horas lectivas' : '')}${fila('Nivel', esc(c.nivel || ''))}${fila('Descripción', esc(c.desc || '').replace(/\n/g, '<br>'))}${fila('Temas', esc(temas).replace(/\n/g, '<br>'))}</table>
+    <p>Cuando lo tenga listo, súbalo en Word desde la herramienta, en <b>Programas de curso → Sus pendientes</b>.</p>
+    <p style="margin:22px 0 4px"><a href="${esc(url)}" style="background:#006aea;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:14px">Abrir la herramienta</a></p></div></div></div>`;
+  return { to:[correo], cc:[S.user.email], subject:`Programa de curso por elaborar · ${c.codigo ? c.codigo + ' ' : ''}${c.curso}`, html };
+}
+
+/* ---------- Detalle ---------- */
+function verPCU(x, rev){
+  const z = document.createElement('div'), dir = escuelasQueGestiono().includes(x.escuela), yo = S.user.email;
+  const d = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
+  z.innerHTML = `<div class="meta-ficha" style="margin-top:0"><span>${etqPCU(x)}</span><span><b>Escuela:</b> ${esc(x.escuela)}</span><span><b>Código:</b> ${esc(x.codigo || 'Sin código')}</span>${x.version ? `<span><b>Versión:</b> ${esc(x.version)}</span>` : ''}<span><b>ID:</b> ${esc(x.id)}</span></div>
+    ${x.observacion && x.estado === 'Con observaciones' ? `<div class="alerta aviso" style="margin-top:14px">${icon('alerta')}<div><b>Observaciones</b><br>${esc(x.observacion).replace(/\n/g, '<br>')}</div></div>` : ''}
+    <div class="resumen-grupo" style="margin-top:16px"><dl>${d('Archivo', x.enlace ? `<a href="${esc(x.enlace)}" target="_blank" rel="noopener">${esc(x.archivo || 'Abrir')}</a>` : 'Todavía no se ha subido')}${d('Subido por', esc(x.subidoPor ? x.subidoPor + (x.fechaSubida ? ' · ' + x.fechaSubida : '') : ''))}
+      ${d('Asignado a', x.asignadoA ? esc(nombreDe(x.asignadoA)) + ' · por ' + esc(nombreDe(x.asignadoPor)) + (x.fechaAsig ? ' · ' + esc(x.fechaAsig) : '') : '')}${d('Indicaciones', esc(x.mensaje).replace(/\n/g, '<br>'))}
+      ${d('Registro', x.registroId ? esc(x.registroId) + (x.codigo ? '' : ' · el código se pone solo al aprobar el curso') : '')}${d('Revisado por', esc(x.revisadoPor ? x.revisadoPor + ' · ' + x.fechaRevision : ''))}</dl></div>`;
+  const acc = [];
+  if(x.enlace) acc.push({ html:`${icon('externo')}Abrir documento`, clase:'btn-suave', accion: () => { window.open(x.enlace, '_blank', 'noopener'); return false; } });
+  if(rev){
+    if(x.estado !== 'Por hacer') acc.push({ html:`${icon('correo')}Observaciones`, clase:'btn-suave', accion: () => { setTimeout(() => dialogoObsPCU(x), 30); return true; } });
+    if(x.estado === 'En revisión' || x.estado === 'Con observaciones') acc.push({ html:`${icon('check')}Marcar revisado`, clase:'btn-primario', accion: () => { setTimeout(() => dialogoRevisadoPCU(x), 30); return true; } });
+  } else {
+    if(x.estado === 'Por hacer' && dir) acc.unshift({ html:`${icon('basura')}Quitar asignación`, clase:'btn-peligro-suave', accion: async () => {
+      if(!await confirmar('Quitar asignación', `${esc(nombreDe(x.asignadoA))} ya no tendrá «${esc(x.curso)}» en sus pendientes.`, 'Quitar', true)) return false;
+      espera('Quitando…'); try { await Almacen().eliminarPCurso(x); PCUS = null; finEspera(); toast('Asignación quitada.'); pintarPCursos(true); return true; } catch(e){ finEspera(); toast(e.message, 'error'); return false; } } });
+    const puede = x.asignadoA === yo || x.correo === yo || dir;
+    if(puede && x.estado !== 'Revisado' && carpetaPCU()) acc.push({ html:`${icon('subir')}${x.archivoId ? 'Subir versión nueva' : 'Subir'}`, clase:'btn-primario', accion: () => { setTimeout(() => subirPCursos({ pcu:x }), 30); return true; } });
+  }
+  fondoMientras(modal({ titulo:x.curso, ancho:true, cuerpo:z, acciones:acc }), colorDe(x.escuela));
+}
+
+/* ---------- Revisión DCD ---------- */
+async function tablaPCURev(cont){
+  const R = S.rev;
+  let lista; try { lista = await cargarPCursos(true); } catch(e){ cont.innerHTML = `<div class="vacio">${esc(e.message)}</div>`; return; }
+  const c = $('#c-pcur'); if(c) c.textContent = `(${lista.filter(x => x.estado === 'En revisión').length})`;
+  const vis0 = lista.filter(x => x.estado !== 'Por hacer' && (!R.escuela || x.escuela === R.escuela));
+  if(!vis0.length){ cont.innerHTML = `<div class="vacio">No hay programas de curso enviados.${!carpetaPCU() ? ' La carpeta todavía no está configurada (Configuración → Programas de curso).' : ''}</div>`; return; }
+  paginador(cont, vis0, { clave:'pcurev', porPag:10, buscar:x => [x.codigo, x.curso, x.escuela, x.subidoPor, x.correo, x.id].join(' '), ph:'Buscar curso, código, escuela o persona', uno:'programa', varios:'programas',
+    filtros:[['', 'Por revisar', x => x.estado === 'En revisión'], ['tod', 'Todos', () => true], ['obs', 'Con observaciones', x => x.estado === 'Con observaciones'], ['ok', 'Revisados', x => x.estado === 'Revisado']],
+    render:(vis, el) => {
+      el.innerHTML = `<div class="tabla-wrap"><table class="tabla"><thead><tr><th>Estado</th><th>Código</th><th>Curso</th><th>Escuela</th><th>Subido por</th><th>Fecha</th><th class="num">Versión</th><th></th></tr></thead><tbody>${vis.map((x, i) => `<tr data-i="${i}">
+        <td>${etqPCU(x)}</td><td class="nw">${esc(x.codigo || '—')}</td><td class="nom">${esc(x.curso)}</td><td class="nw"><i class="punto" style="background:${esc(colorDe(x.escuela))};margin-right:7px"></i>${esc(x.escuela)}</td>
+        <td>${esc(x.subidoPor)}</td><td class="nw">${esc(String(x.fechaSubida).split(' ')[0])}</td><td class="num">${esc(x.version || '1')}</td>
+        <td class="nw">${x.enlace ? `<a class="btn btn-sm btn-suave" href="${esc(x.enlace)}" target="_blank" rel="noopener" data-no>${icon('externo')}Abrir</a>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+      $$('tbody tr', el).forEach(tr => tr.addEventListener('click', e => { if(e.target.closest('[data-no]')) return; verPCU(vis[+tr.dataset.i], true); }));
+    } });
+}
+function dialogoObsPCU(x){
+  const z = document.createElement('div'), sch = escuelaDe(x.escuela);
+  z.innerHTML = `<p style="margin:0 0 12px;color:var(--tinta-2)">${esc(x.subidoPor || x.correo)} verá las observaciones y podrá subir una versión nueva del programa (el enlace se mantiene).</p>
+    <div class="campo" style="margin:0"><label for="ob-t">Observaciones</label><textarea id="ob-t" rows="6" placeholder="Qué debe ajustar en el programa"></textarea></div>
+    <label class="check-req" style="margin-top:12px"><input type="checkbox" id="ob-av" checked><span>Avisar por correo a ${esc(x.correo || 'quien lo subió')}${(sch.correos || []).length ? ' con copia a la dirección' : ''}</span></label>`;
+  modal({ titulo:'Observaciones · ' + x.curso, cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('correo')}Enviar observaciones`, clase:'btn-primario', accion: async () => {
+    const t = $('#ob-t', z).value.trim(); if(!t){ toast('Escriba las observaciones.', 'error'); return false; }
+    espera('Guardando…');
+    try {
+      Object.assign(x, { estado:'Con observaciones', observacion:t, revisadoPor:S.user.email, fechaRevision:fechaTexto(new Date()) });
+      await Almacen().guardarPCurso(x); PCUS = null;
+      let nota = '';
+      if($('#ob-av', z).checked && x.correo){
+        const borr = modoBorrador(), url = location.href.split('?')[0].split('#')[0];
+        const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#141b2b;max-width:620px">${textoAHtml(`${saludoHora()}, ${String(x.subidoPor || '').split(' ')[0] || ''}:\n\nRevisamos el programa del curso ${x.codigo ? x.codigo + ' ' : ''}${x.curso} y tenemos las siguientes observaciones:\n\n${t}\n\nPuede subir la versión corregida desde la herramienta, en «Programas de curso».`)}
+          <p><a href="${esc(x.enlace)}">Abrir el documento</a> · <a href="${esc(url)}">Abrir la herramienta</a></p><p>Saludos cordiales,<br>${esc(S.user.name)}</p></div>`;
+        await Almacen().enviarCorreo({ to:[x.correo], cc:(sch.correos || []).filter(c => c !== x.correo), subject:`Observaciones sobre el programa de curso «${x.curso}»`, html }, borr);
+        nota = borr ? ' El correo quedó en sus borradores de Gmail.' : ' Se envió el correo.';
+      }
+      finEspera(); toast('Observaciones guardadas.' + nota, '', 5000); pintarRevision(); return true;
+    } catch(e){ finEspera(); toast(e.message, 'error', 6000); return false; }
+  } }] });
+}
+function dialogoRevisadoPCU(x){
+  const z = document.createElement('div');
+  const reg = x.registroId ? (S.todos || []).find(r => r.id === x.registroId) : null, enPM = !!x.codigo && !!(MAESTRA || []).length ? MAESTRA.includes(x.codigo.toUpperCase()) : !!x.codigo;
+  z.innerHTML = `<p style="margin:0 0 12px;color:var(--tinta-2)">El programa de «${esc(x.curso)}» quedará como revisado.</p>
+    ${enPM ? `<label class="check-req"><input type="checkbox" id="rv-pm" checked><span>Poner el enlace en la Plantilla Maestra (columna «[Word] Programa» de ${esc(x.codigo)})</span></label>`
+      : reg ? `<div class="alerta" style="margin:0">${icon('info')}<div>El curso todavía no tiene código. El enlace ya está en su registro y pasará a la Plantilla Maestra al aprobarlo, con el código puesto en el nombre del archivo.</div></div>` : ''}
+    <label class="check-req" style="margin-top:12px"><input type="checkbox" id="rv-av"><span>Avisar por correo a ${esc(x.correo || 'quien lo subió')}</span></label>`;
+  modal({ titulo:'Marcar como revisado', cuerpo:z, acciones:[{ texto:'Cancelar', valor:false }, { html:`${icon('check')}Marcar revisado`, clase:'btn-primario', accion: async () => {
+    espera('Guardando…');
+    try {
+      Object.assign(x, { estado:'Revisado', revisadoPor:S.user.email, fechaRevision:fechaTexto(new Date()) });
+      await Almacen().guardarPCurso(x); PCUS = null;
+      let nota = '';
+      if($('#rv-pm', z) && $('#rv-pm', z).checked){ try { await Almacen().maestraEnlacePrograma(x.codigo, x.enlace); PM_CACHE = null; nota += ' Enlace puesto en la Plantilla Maestra.'; } catch(e){ toast('Se marcó como revisado, pero no se pudo poner el enlace: ' + e.message, 'error', 7000); } }
+      if($('#rv-av', z).checked && x.correo){ try { await Almacen().enviarCorreo({ to:[x.correo], cc:[], subject:`Programa de curso revisado · ${x.codigo ? x.codigo + ' ' : ''}${x.curso}`, html:`<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6">${textoAHtml(`${saludoHora()}:\n\nDesarrollo Curricular revisó el programa del curso ${x.codigo ? x.codigo + ' ' : ''}${x.curso}. ¡Gracias!\n\nSaludos cordiales,\n${S.user.name}`)}</div>` }, modoBorrador()); nota += ' Aviso enviado.'; } catch(e){} }
+      finEspera(); toast('Programa revisado.' + nota, '', 5000); pintarRevision(); return true;
+    } catch(e){ finEspera(); toast(e.message, 'error', 6000); return false; }
+  } }] });
+}
+/** Al aprobar un curso registrado, su programa de curso recibe el código (en la hoja y en el nombre del archivo). */
+async function enlazarCodigoPCU(r, codigo){
+  const lista = await cargarPCursos(true); let n = 0;
+  for(const x of lista.filter(y => y.registroId === r.id && !y.codigo)){
+    x.codigo = String(codigo).toUpperCase();
+    if(x.archivoId){ const nuevo = nombreArchivoPCU(x, extDe(x.archivo)); try { await Almacen().renombrarArchivo(x.archivoId, nuevo); x.archivo = nuevo; } catch(e){ console.warn('No se pudo renombrar', e); } }
+    await Almacen().guardarPCurso(x); n++;
+  }
+  PCUS = null; return n;
+}
+
+/* ---------- Configuración (administración) ---------- */
+function tarjetaCarpetaPCU(){
+  return `<div class="tarjeta form-tarjeta" style="margin-top:16px"><h2>Programas de curso</h2><p class="intro">Carpeta de Google Drive donde la dirección y los docentes suben los programas de curso. Cada archivo se nombra con el código y el nombre del curso.</p>
+    <div class="campo"><label for="pc-car">Enlace de la carpeta</label><input type="text" id="pc-car" value="${esc(S.boot.cfg.CARPETA_PROGRAMAS || '')}" placeholder="https://drive.google.com/drive/folders/…"></div>
+    <div id="pc-car-est" class="nota" style="margin-top:8px"></div>
+    <div class="pie-form"><button class="btn btn-suave" id="pc-acc">${icon('equipo')}Dar acceso a las personas de la herramienta</button><span class="esp"></span><button class="btn btn-primario" id="pc-g">Guardar carpeta</button></div></div>`;
+}
+function activarCarpetaPCU(){
+  const est = $('#pc-car-est');
+  const verificar = async () => {
+    const id = idCarpeta($('#pc-car').value); if(!id){ est.innerHTML = 'Pegue el enlace de la carpeta (o su ID).'; return null; }
+    est.innerHTML = 'Verificando la carpeta…';
+    try { const f = await Almacen().carpetaInfo(id);
+      if(f.mimeType && f.mimeType !== 'application/vnd.google-apps.folder'){ est.innerHTML = `<span style="color:var(--error)">El enlace no es de una carpeta.</span>`; return null; }
+      est.innerHTML = `${icon('check')} Carpeta <b>${esc(f.name)}</b>${f.capabilities && f.capabilities.canShare === false ? ' · <span style="color:var(--aviso)">su cuenta no puede compartirla</span>' : ''}`; return id; }
+    catch(e){ est.innerHTML = `<span style="color:var(--error)">${esc(e.message)}</span>`; return null; }
+  };
+  if(carpetaPCU()) verificar();
+  $('#pc-g').addEventListener('click', async () => {
+    const id = await verificar(); if(!id) return;
+    espera('Guardando…'); try { await Almacen().guardarConfig({ CARPETA_PROGRAMAS: `https://drive.google.com/drive/folders/${id}` }); S.boot.cfg.CARPETA_PROGRAMAS = `https://drive.google.com/drive/folders/${id}`; finEspera(); toast('Carpeta guardada.'); }
+    catch(e){ finEspera(); toast(e.message, 'error'); }
+  });
+  $('#pc-acc').addEventListener('click', async () => {
+    const id = carpetaPCU(); if(!id){ toast('Guarde primero la carpeta.', 'error'); return; }
+    const correos = new Set(S.boot.equipo.filter(m => m.activo).map(m => m.correo).concat(listaCorreos(S.boot.cfg.ADMINISTRADORES)));
+    (S.todos || []).forEach(r => { if(r.correo) correos.add(r.correo); });
+    if(!await confirmar('Dar acceso a la carpeta', `Se dará permiso de edición en la carpeta a <b>${correos.size}</b> personas (dirección, docentes, revisión y administración). Google no les enviará un correo. Las personas nuevas reciben acceso solas al agregarlas.`, 'Dar acceso')) return;
+    espera('Dando acceso…');
+    try { const r = await Almacen().compartirCarpeta(id, [...correos]); finEspera();
+      modal({ titulo:'Acceso a la carpeta', cuerpo:`<p style="margin:0">${r.nuevos.length} persona(s) recibieron acceso; ${r.ya} ya lo tenían.</p>${r.errores.length ? `<div class="alerta aviso" style="margin-top:12px">${icon('alerta')}<div>No se pudo dar acceso a: ${esc(r.errores.join(', '))}. Revise que sean cuentas de Google.</div></div>` : ''}`, acciones:[{ texto:'Listo', clase:'btn-primario' }] }); }
+    catch(e){ finEspera(); toast(e.message, 'error', 6000); }
+  });
+}
+
+/* ---------- Modo demostración ---------- */
+Object.assign(Demo, {
+  async pcursos(){ await sleep(150); return (Demo.datos().pcursos || []).map(x => Object.assign({}, x)); },
+  async guardarPCurso(x){ await sleep(200); const d = Demo.datos(); d.pcursos = d.pcursos || [];
+    if(!x.id){ x.id = 'PC-' + nuevoId().slice(2); x.fecha = fechaTexto(new Date()); }
+    const i = d.pcursos.findIndex(y => y.id === x.id); const c = Object.assign({}, x); if(i >= 0) d.pcursos[i] = c; else d.pcursos.unshift(c); Demo.guardar(d); return x; },
+  async eliminarPCurso(x){ const d = Demo.datos(); d.pcursos = (d.pcursos || []).filter(y => y.id !== x.id); Demo.guardar(d); },
+  async carpetaInfo(){ await sleep(200); return { id:'demo', name:'Programas de curso (demostración)', mimeType:'application/vnd.google-apps.folder', capabilities:{ canShare:true } }; },
+  async subirArchivo(file, nombre, carpeta, reemplazar){ await sleep(500); const id = reemplazar || 'demo' + Math.random().toString(36).slice(2, 10); return { id, name:nombre, webViewLink:'https://drive.google.com/file/d/' + id + '/view' }; },
+  async renombrarArchivo(){ await sleep(100); },
+  async compartirCarpeta(c, correos){ await sleep(300); return { nuevos:correos.slice(0, Math.max(0, correos.length - 2)), ya:Math.min(2, correos.length), errores:[] }; },
+  async maestraEnlacePrograma(codigo, url){ const d = Demo.datos(); d.maestraWord = Object.assign(d.maestraWord || {}, { [codigo]:url }); Demo.guardar(d); }
+});
+
 function conectarDemo(){
   const perfiles = { director:{ email:'directora.demo@ucenfotec.ac.cr', name:'Laura Directora', given:'Laura' }, docente:{ email:'ana.mora@ucenfotec.ac.cr', name:'Ana Mora', given:'Ana' },
     revisor:{ email:'revisora@ucenfotec.ac.cr', name:'Siony Revisora', given:'Siony' }, powercampus:{ email:'powercampus.demo@ucenfotec.ac.cr', name:'Mario PowerCampus', given:'Mario' } };
@@ -4209,7 +4749,8 @@ function paginaLegal(tipo){
       <tr><td>Información de los cursos</td><td>Lo que usted escribe o sube en Excel</td><td>Guardar la solicitud en la hoja de registros de DCD y generar su comprobante.</td></tr>
       <tr><td>Personas del equipo</td><td>Lo que ingresa una persona directora</td><td>Dar acceso a la herramienta para registrar o revisar cursos.</td></tr></table>
     <h2>3. Acceso a Google Sheets</h2><div class="caja">Usamos el permiso <code>spreadsheets</code>. Google lo describe de forma general («ver y editar sus hojas de cálculo»), pero la herramienta <b>solo</b> abre las hojas de Desarrollo Curricular configuradas en ella: la hoja de registros y la Plantilla Maestra de Microcursos. No lee, modifica ni guarda ninguna otra hoja suya, y no accede al resto de su Drive.</div>
-    <h2>4. Envío de correo</h2><div class="caja">El permiso <code>gmail.send</code> se usa <b>únicamente</b> para enviar, desde su cuenta y al momento de registrar, el aviso a las personas que DCD configuró y, si usted lo marca, una copia a usted. No leemos, buscamos, borramos ni guardamos mensajes de su buzón.</div>
+    <h2>4. Google Drive</h2><div class="caja">El permiso <code>drive</code> se usa <b>únicamente</b> para subir los programas de curso a la carpeta que Desarrollo Curricular configuró, ponerles el código del curso en el nombre y dar acceso a esa carpeta a las personas de la herramienta. No abrimos ni modificamos otros archivos de su Drive.</div>
+    <h2>4.1 Envío de correo</h2><div class="caja">El permiso <code>gmail.send</code> se usa <b>únicamente</b> para enviar, desde su cuenta y al momento de registrar, el aviso a las personas que DCD configuró y, si usted lo marca, una copia a usted. No leemos, buscamos, borramos ni guardamos mensajes de su buzón.</div>
     <h2>5. Uso limitado</h2><p>El uso de la información recibida de las API de Google cumple la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de datos del usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado. No vendemos datos, no los usamos para publicidad, no los compartimos fuera de lo aquí descrito ni los usamos para entrenar modelos de inteligencia artificial.</p>
     <h2>6. Dónde se guarda</h2><p>Todo funciona en su navegador y se comunica directamente con Google. No hay servidores intermedios. Los datos quedan en el Google Sheets de DCD, al que acceden solo el personal autorizado y las personas que registran cursos. En su navegador se guardan su nombre, correo y foto (para saludarle al volver), la escuela elegida, el borrador del curso en curso y, durante la sesión, el token temporal de Google (vence en una hora).</p>
     <h2>7. Conservación y derechos</h2><p>Los registros se conservan mientras sean necesarios para la gestión académica. Según la Ley 8968 de Protección de la Persona frente al Tratamiento de sus Datos Personales, puede solicitar acceso, rectificación o supresión escribiendo a ${c}. Puede retirar los permisos cuando quiera en <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</p>
